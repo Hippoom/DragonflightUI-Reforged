@@ -239,12 +239,17 @@ DFRL:NewMod("RangeIndicator", 1, function()
     end)
 
     local updateTimer = 0
+    local hadRangeTarget = false
     f:SetScript("OnUpdate", function()
         updateTimer = updateTimer + arg1
         if updateTimer >= 0.1 then
-            Setup:ProcessAllButtons(Setup.UpdateIndicatorVisibility)
+            local hasRangeTarget = UnitExists("target") and UnitCanAttack("player", "target")
+            if hasRangeTarget or hadRangeTarget then
+                Setup:ProcessAllButtons(Setup.UpdateIndicatorVisibility)
+            end
+            hadRangeTarget = hasRangeTarget
             updateTimer = 0
-            DFRL.activeScripts["RangeIndicatorScript"] = true
+            DFRL.activeScripts["RangeIndicatorScript"] = hasRangeTarget
         else
             DFRL.activeScripts["RangeIndicatorScript"] = false
         end
