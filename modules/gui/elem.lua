@@ -69,6 +69,7 @@ DFRL:NewMod("Gui-elem", 3, function()
             ["RangeIndicator"]    = {6, 2},
             ["Bags"]    = {7, 1},
             ["Cast"]    = {8, 1},
+            ["TargetCastbar"] = {8, 2},
             ["Chat"]    = {9, 1},
             ["GUI-Dragonflight"]   = {10, 1},
             ["Errors"]      = {10, 2},
