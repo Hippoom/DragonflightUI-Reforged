@@ -12,6 +12,16 @@ local PULSE_SCALE = 1.05
 local CUTOUT_DURATION = .3
 local CUTOUT_ALPHA = 1
 
+local animate = CreateFrame'Frame'
+
+local function HasActiveAnimations()
+    return next(animations) or next(pulses) or next(cutouts)
+end
+
+local function StartAnimationRunner()
+    animate:SetScript('OnUpdate', animate.OnUpdate)
+end
+
 -- public
 function CreateStatusBar(parent, width, height, animConfig)
     local bar = CreateFrame('Frame', nil, parent)
@@ -98,6 +108,7 @@ function CreateStatusBar(parent, width, height, animConfig)
 
                 -- register cutout for fade animation
                 cutouts[cutout] = {endTime = GetTime() + self.cutoutDuration, duration = self.cutoutDuration}
+                StartAnimationRunner()
             end
 
             -- determine if we should use instant update
@@ -113,6 +124,7 @@ function CreateStatusBar(parent, width, height, animConfig)
                 if self.enablePulse then
                     pulses[self] = GetTime() + PULSE_DURATION
                 end
+                StartAnimationRunner()
                 -- if no bar animation, update display value immediately
                 if not self.enableBarAnim then
                     self.val_ = val
@@ -278,10 +290,12 @@ local function UpdateCutoutAnimations(now)
 end
 
 -- handler
-local animate = CreateFrame'Frame'
-animate:SetScript('OnUpdate', function()
+animate.OnUpdate = function()
     local now = GetTime()
     UpdateBarAnimations()
     UpdatePulseAnimations(now)
     UpdateCutoutAnimations(now)
-end)
+    if not HasActiveAnimations() then
+        animate:SetScript('OnUpdate', nil)
+    end
+end
