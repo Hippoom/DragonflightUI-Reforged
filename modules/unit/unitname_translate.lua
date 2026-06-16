@@ -26,20 +26,11 @@ DFRL:NewMod("UnitNameTranslate", 2, function()
     -- -------------------------------------------------------------------------
 
     -- Returns true if the string contains at least one CJK Unified Ideograph
-    -- (U+4E00–U+9FFF) encoded as UTF-8 (3-byte sequences E4-E9 xx xx).
+    -- (U+4E00–U+9FFF) encoded as UTF-8 (3-byte sequences where the first byte is 228-233).
+    -- Optimized to use native C-level pattern matching and safe decimal escape sequences.
     local function HasChinese(str)
         if not str then return false end
-        local i = 1
-        local len = string.len(str)
-        while i <= len do
-            local b = string.byte(str, i)
-            if b and b >= 0xE4 and b <= 0xE9 then
-                -- Likely a CJK character – enough confidence for our purpose
-                return true
-            end
-            i = i + 1
-        end
-        return false
+        return string.find(str, "[\228-\233][\128-\191][\128-\191]") ~= nil
     end
 
     -- Fast glossary + cache lookup; returns translation or nil.
@@ -176,23 +167,31 @@ DFRL:NewMod("UnitNameTranslate", 2, function()
     f:RegisterEvent("PLAYER_ENTERING_WORLD")
     f:RegisterEvent("PARTY_MEMBERS_CHANGED")
     f:RegisterEvent("UNIT_PET")
+    f:RegisterEvent("UNIT_TARGET")       -- Catches ToT shifts when your target switches targets
+    f:RegisterEvent("UNIT_NAME_UPDATE")  -- Catches late-loading names or engine cache resolution updates
 
     f:SetScript("OnEvent", function()
+        -- Note: event and arg1 are global variables inside 1.12 OnEvent scripts
         if event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
             UpdateTargetName()
-            UpdateTotName()    -- ToT changes whenever target changes
-            UpdatePartyNames() -- Re-check party on world entry
+            UpdateTotName()    
+            UpdatePartyNames() 
+        elseif event == "UNIT_TARGET" and arg1 == "target" then
+            UpdateTotName()
         elseif event == "PARTY_MEMBERS_CHANGED" then
             UpdatePartyNames()
+        elseif event == "UNIT_NAME_UPDATE" then
+            if arg1 == "target" then 
+                UpdateTargetName()
+            elseif arg1 == "targettarget" then 
+                UpdateTotName()
+            elseif arg1 and string.find(arg1, "party") then 
+                UpdatePartyNames() 
+            end
         elseif event == "UNIT_PET" then
             UpdatePetName()
         end
     end)
-
-    -- Also hook PLAYER_TARGET_CHANGED for ToT specifically: vanilla fires a
-    -- separate "UNIT_FLAGS"/"UNIT_NAME_UPDATE" but those aren't reliable in
-    -- 1.12.  Re-running UpdateTotName inside PLAYER_TARGET_CHANGED is enough
-    -- because the ToT changes whenever the target changes.
 
     -- Initial population on module load (handles /reload or late-load scenarios)
     UpdateTargetName()
