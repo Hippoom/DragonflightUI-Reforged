@@ -1,5 +1,5 @@
 -- unitname_translate.lua
--- Translates Chinese unit names on target, target-of-target, pet, and party
+-- Translates Chinese unit names on target, target-of-target, pet, party, and raid
 -- frames using WoWTranslate (glossary → persistent cache → async DLL API).
 --
 -- Load order: must come AFTER modules\unit\target.lua and modules\unit\mini.lua
@@ -8,15 +8,17 @@
 -- Dependency: WoWTranslate addon (optional). When absent the module is a no-op.
 
 DFRL:NewDefaults("UnitNameTranslate", {
-    enabled       = {true},
-    translateTarget  = {true,  "checkbox", nil, nil, "Translation", 1,
+    enabled         = {true},
+    translateTarget = {true,  "checkbox", nil, nil, "Translation", 1,
                         "Translate Chinese target names (requires WoWTranslate)", nil, nil},
-    translateTot     = {true,  "checkbox", nil, nil, "Translation", 2,
+    translateTot    = {true,  "checkbox", nil, nil, "Translation", 2,
                         "Translate Chinese target-of-target names (requires WoWTranslate)", nil, nil},
-    translatePet     = {true,  "checkbox", nil, nil, "Translation", 3,
+    translatePet    = {true,  "checkbox", nil, nil, "Translation", 3,
                         "Translate Chinese pet names (requires WoWTranslate)", nil, nil},
-    translateParty   = {true,  "checkbox", nil, nil, "Translation", 4,
+    translateParty  = {true,  "checkbox", nil, nil, "Translation", 4,
                         "Translate Chinese party member names (requires WoWTranslate)", nil, nil},
+    translateRaid   = {true,  "checkbox", nil, nil, "Translation", 5,
+                        "Translate Chinese raid member names (requires WoWTranslate)", nil, nil},
 })
 
 DFRL:NewMod("UnitNameTranslate", 2, function()
@@ -53,10 +55,9 @@ DFRL:NewMod("UnitNameTranslate", 2, function()
         end
     end
 
-    -- Applies translated text to a FontString, prefixing with the translation
+    -- Applies translated text to a FontString, putting English first
     -- followed by the original CJK name in brackets:
     --   "龙王" → "Dragon King [龙王]"
-    -- This keeps English primary for easy reading while retaining server context.
     local function ApplyName(fontString, original, translation)
         if not fontString then return end
         if translation and translation ~= "" then
@@ -73,12 +74,13 @@ DFRL:NewMod("UnitNameTranslate", 2, function()
     -- Translate `name` and apply it to `fontString`.  The function:
     --   1. Does nothing if name is not Chinese.
     --   2. Applies an instant result from glossary/cache if available.
-    --   3. Falls back to async DLL request; updates the FontString on completion.
+    --   3. Tags the widget to prevent async race conditions.
+    --   4. Falls back to async DLL request; updates the FontString on completion.
     local function TranslateName(fontString, name)
-        if not name or name == "" then return end
+        if not fontString or not name or name == "" then return end
         if not HasChinese(name) then return end
 
-        -- Instant path --
+        -- Instant path (No closures or memory allocations created here)
         local fast = QuickLookup(name)
         if fast then
             ApplyName(fontString, name, fast)
@@ -90,13 +92,16 @@ DFRL:NewMod("UnitNameTranslate", 2, function()
             return
         end
 
+        -- Improvement 1: Widget Tagging. Stamp the expected name directly onto the UI table.
+        fontString.trackingName = name
+
         WoWTranslate_API.Translate(name, function(translation, err)
             if translation and translation ~= "" then
                 SaveToCache(name, translation)
-                -- Guard: check the FontString still contains the original name before
-                -- overwriting (target may have changed during the async wait).
-                local current = fontString:GetText()
-                if current and string.find(current, name, 1, true) then
+                
+                -- Improvement 1: Strict equality check ensures that even if a player target-cycles 
+                -- lightning-fast, the translation matches exactly what the frame is *currently* showing.
+                if fontString.trackingName == name then
                     ApplyName(fontString, name, translation)
                 end
             end
@@ -104,7 +109,7 @@ DFRL:NewMod("UnitNameTranslate", 2, function()
     end
 
     -- -------------------------------------------------------------------------
-    -- Target frame
+    -- Frame Update Wrappers
     -- -------------------------------------------------------------------------
     local function UpdateTargetName()
         if not DFRL:GetTempDB("UnitNameTranslate", "translateTarget") then return end
@@ -114,9 +119,6 @@ DFRL:NewMod("UnitNameTranslate", 2, function()
         TranslateName(TargetFrame.name, name)
     end
 
-    -- -------------------------------------------------------------------------
-    -- Target-of-Target frame
-    -- -------------------------------------------------------------------------
     local function UpdateTotName()
         if not DFRL:GetTempDB("UnitNameTranslate", "translateTot") then return end
         if not UnitExists("targettarget") then return end
@@ -127,23 +129,16 @@ DFRL:NewMod("UnitNameTranslate", 2, function()
         end
     end
 
-    -- -------------------------------------------------------------------------
-    -- Pet frame
-    -- -------------------------------------------------------------------------
     local function UpdatePetName()
         if not DFRL:GetTempDB("UnitNameTranslate", "translatePet") then return end
         if not UnitExists("pet") then return end
         local name = UnitName("pet")
         if not name then return end
-        -- Vanilla stores pet name on PetName FontString
         if PetName then
             TranslateName(PetName, name)
         end
     end
 
-    -- -------------------------------------------------------------------------
-    -- Party frames (up to 4 members)
-    -- -------------------------------------------------------------------------
     local function UpdatePartyNames()
         if not DFRL:GetTempDB("UnitNameTranslate", "translateParty") then return end
         for i = 1, 4 do
@@ -158,6 +153,21 @@ DFRL:NewMod("UnitNameTranslate", 2, function()
         end
     end
 
+    -- Improvement 4: Added 40-man Raid Frame translation processing loop
+    local function UpdateRaidNames()
+        if not DFRL:GetTempDB("UnitNameTranslate", "translateRaid") then return end
+        for i = 1, 40 do
+            local unit = "raid" .. i
+            if UnitExists(unit) then
+                local name = UnitName(unit)
+                local fontString = _G["RaidGroupButton" .. i .. "Name"]
+                if name and fontString then
+                    TranslateName(fontString, name)
+                end
+            end
+        end
+    end
+
     -- -------------------------------------------------------------------------
     -- Event driver
     -- -------------------------------------------------------------------------
@@ -165,20 +175,23 @@ DFRL:NewMod("UnitNameTranslate", 2, function()
     f:RegisterEvent("PLAYER_TARGET_CHANGED")
     f:RegisterEvent("PLAYER_ENTERING_WORLD")
     f:RegisterEvent("PARTY_MEMBERS_CHANGED")
+    f:RegisterEvent("RAID_ROSTER_UPDATE")   -- Listens for raid group changes
     f:RegisterEvent("UNIT_PET")
-    f:RegisterEvent("UNIT_TARGET")       -- Catches ToT shifts when your target switches targets
-    f:RegisterEvent("UNIT_NAME_UPDATE")  -- Catches late-loading names or engine cache resolution updates
+    f:RegisterEvent("UNIT_TARGET")         -- Catches target switching their own target
+    f:RegisterEvent("UNIT_NAME_UPDATE")    -- Handles late-resolving or clearing unit strings
 
     f:SetScript("OnEvent", function()
-        -- Note: event and arg1 are global variables inside 1.12 OnEvent scripts
+        -- Note: event and arg1 are global variables exposed inside 1.12 OnEvent layouts
         if event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
             UpdateTargetName()
             UpdateTotName()    
             UpdatePartyNames() 
+            UpdateRaidNames()
         elseif event == "UNIT_TARGET" and arg1 == "target" then
             UpdateTotName()
-        elseif event == "PARTY_MEMBERS_CHANGED" then
+        elseif event == "PARTY_MEMBERS_CHANGED" or event == "RAID_ROSTER_UPDATE" then
             UpdatePartyNames()
+            UpdateRaidNames()
         elseif event == "UNIT_NAME_UPDATE" then
             if arg1 == "target" then 
                 UpdateTargetName()
@@ -186,16 +199,40 @@ DFRL:NewMod("UnitNameTranslate", 2, function()
                 UpdateTotName()
             elseif arg1 and string.find(arg1, "party") then 
                 UpdatePartyNames() 
+            elseif arg1 and string.find(arg1, "raid") then 
+                UpdateRaidNames() 
             end
         elseif event == "UNIT_PET" then
             UpdatePetName()
         end
     end)
 
+    -- -------------------------------------------------------------------------
+    -- Improvement 2: Secure Function Hooking
+    -- Forces our translated string over top of Blizzard's native frame draws
+    -- right as they complete, eliminating visual raw CJK flickering.
+    -- -------------------------------------------------------------------------
+    if TargetFrame_Update then
+        local old_TargetFrame_Update = TargetFrame_Update
+        TargetFrame_Update = function()
+            old_TargetFrame_Update() -- Let native engine draw first
+            UpdateTargetName()       -- Instantly clamp our custom layout over it
+        end
+    end
+
+    if TargetofTarget_Update then
+        local old_TargetofTarget_Update = TargetofTarget_Update
+        TargetofTarget_Update = function()
+            old_TargetofTarget_Update()
+            UpdateTotName()
+        end
+    end
+
     -- Initial population on module load (handles /reload or late-load scenarios)
     UpdateTargetName()
     UpdateTotName()
     UpdatePetName()
     UpdatePartyNames()
+    UpdateRaidNames()
 
 end)
