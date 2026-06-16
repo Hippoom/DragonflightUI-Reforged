@@ -1,0 +1,203 @@
+-- unitname_translate.lua
+-- Translates Chinese unit names on target, target-of-target, pet, and party
+-- frames using WoWTranslate (glossary → persistent cache → async DLL API).
+--
+-- Load order: must come AFTER modules\unit\target.lua and modules\unit\mini.lua
+-- Priority 2 (same as Fonts) so it runs after all priority-1 unit modules.
+--
+-- Dependency: WoWTranslate addon (optional). When absent the module is a no-op.
+
+DFRL:NewDefaults("UnitNameTranslate", {
+    enabled       = {true},
+    translateTarget  = {true,  "checkbox", nil, nil, "Translation", 1,
+                        "Translate Chinese target names (requires WoWTranslate)", nil, nil},
+    translateTot     = {true,  "checkbox", nil, nil, "Translation", 2,
+                        "Translate Chinese target-of-target names (requires WoWTranslate)", nil, nil},
+    translatePet     = {true,  "checkbox", nil, nil, "Translation", 3,
+                        "Translate Chinese pet names (requires WoWTranslate)", nil, nil},
+    translateParty   = {true,  "checkbox", nil, nil, "Translation", 4,
+                        "Translate Chinese party member names (requires WoWTranslate)", nil, nil},
+})
+
+DFRL:NewMod("UnitNameTranslate", 2, function()
+
+    -- -------------------------------------------------------------------------
+    -- Helpers
+    -- -------------------------------------------------------------------------
+
+    -- Returns true if the string contains at least one CJK Unified Ideograph
+    -- (U+4E00–U+9FFF) encoded as UTF-8 (3-byte sequences E4-E9 xx xx).
+    local function HasChinese(str)
+        if not str then return false end
+        local i = 1
+        local len = string.len(str)
+        while i <= len do
+            local b = string.byte(str, i)
+            if b and b >= 0xE4 and b <= 0xE9 then
+                -- Likely a CJK character – enough confidence for our purpose
+                return true
+            end
+            i = i + 1
+        end
+        return false
+    end
+
+    -- Fast glossary + cache lookup; returns translation or nil.
+    local function QuickLookup(name)
+        -- 1. WoWTranslate glossary (WoW-specific terms, 100 % accuracy)
+        if WoWTranslateGlossary and WoWTranslateGlossary[name] then
+            return WoWTranslateGlossary[name]
+        end
+        -- 2. Persistent cross-session cache (SavedVariables)
+        local cached = WoWTranslate_CacheGet and WoWTranslate_CacheGet(name)
+        if cached then return cached end
+        return nil
+    end
+
+    -- Save a successful translation to the persistent cache so later lookups
+    -- are instant.
+    local function SaveToCache(original, translation)
+        if WoWTranslate_CacheSave then
+            WoWTranslate_CacheSave(original, translation)
+        end
+    end
+
+    -- Applies translated text to a FontString, prefixing with the translation
+    -- in brackets so the player always sees both forms:
+    --   "龙王" → "龙王 [Dragon King]"
+    -- This keeps original names visible for server-side context (loot rolls,
+    -- /target macros) while surfacing readable English for CN players.
+    local function ApplyName(fontString, original, translation)
+        if not fontString then return end
+        if translation and translation ~= "" then
+            fontString:SetText(original .. " [" .. translation .. "]")
+        else
+            fontString:SetText(original)
+        end
+    end
+
+    -- -------------------------------------------------------------------------
+    -- Per-unit translation entry point
+    -- -------------------------------------------------------------------------
+
+    -- Translate `name` and apply it to `fontString`.  The function:
+    --   1. Does nothing if name is not Chinese.
+    --   2. Applies an instant result from glossary/cache if available.
+    --   3. Falls back to async DLL request; updates the FontString on completion.
+    local function TranslateName(fontString, name)
+        if not name or name == "" then return end
+        if not HasChinese(name) then return end
+
+        -- Instant path --
+        local fast = QuickLookup(name)
+        if fast then
+            ApplyName(fontString, name, fast)
+            return
+        end
+
+        -- Async path --
+        if not (WoWTranslate_API and WoWTranslate_API.IsAvailable and WoWTranslate_API.IsAvailable()) then
+            return
+        end
+
+        WoWTranslate_API.Translate(name, function(translation, err)
+            if translation and translation ~= "" then
+                SaveToCache(name, translation)
+                -- Guard: check the FontString still shows the same name before
+                -- overwriting (target may have changed during the async wait).
+                local current = fontString:GetText()
+                if current and string.find(current, name, 1, true) then
+                    ApplyName(fontString, name, translation)
+                end
+            end
+        end, "zh")
+    end
+
+    -- -------------------------------------------------------------------------
+    -- Target frame
+    -- -------------------------------------------------------------------------
+    local function UpdateTargetName()
+        if not DFRL:GetTempDB("UnitNameTranslate", "translateTarget") then return end
+        if not UnitExists("target") then return end
+        local name = UnitName("target")
+        if not name then return end
+        TranslateName(TargetFrame.name, name)
+    end
+
+    -- -------------------------------------------------------------------------
+    -- Target-of-Target frame
+    -- -------------------------------------------------------------------------
+    local function UpdateTotName()
+        if not DFRL:GetTempDB("UnitNameTranslate", "translateTot") then return end
+        if not UnitExists("targettarget") then return end
+        local name = UnitName("targettarget")
+        if not name then return end
+        if TargetofTargetFrame and TargetofTargetFrame.name then
+            TranslateName(TargetofTargetFrame.name, name)
+        end
+    end
+
+    -- -------------------------------------------------------------------------
+    -- Pet frame
+    -- -------------------------------------------------------------------------
+    local function UpdatePetName()
+        if not DFRL:GetTempDB("UnitNameTranslate", "translatePet") then return end
+        if not UnitExists("pet") then return end
+        local name = UnitName("pet")
+        if not name then return end
+        -- Vanilla stores pet name on PetName FontString
+        if PetName then
+            TranslateName(PetName, name)
+        end
+    end
+
+    -- -------------------------------------------------------------------------
+    -- Party frames (up to 4 members)
+    -- -------------------------------------------------------------------------
+    local function UpdatePartyNames()
+        if not DFRL:GetTempDB("UnitNameTranslate", "translateParty") then return end
+        for i = 1, 4 do
+            local unit = "party" .. i
+            if UnitExists(unit) then
+                local name = UnitName(unit)
+                local fontString = _G["PartyMemberFrame" .. i .. "Name"]
+                if name and fontString then
+                    TranslateName(fontString, name)
+                end
+            end
+        end
+    end
+
+    -- -------------------------------------------------------------------------
+    -- Event driver
+    -- -------------------------------------------------------------------------
+    local f = CreateFrame("Frame")
+    f:RegisterEvent("PLAYER_TARGET_CHANGED")
+    f:RegisterEvent("PLAYER_ENTERING_WORLD")
+    f:RegisterEvent("PARTY_MEMBERS_CHANGED")
+    f:RegisterEvent("UNIT_PET")
+
+    f:SetScript("OnEvent", function()
+        if event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
+            UpdateTargetName()
+            UpdateTotName()    -- ToT changes whenever target changes
+            UpdatePartyNames() -- Re-check party on world entry
+        elseif event == "PARTY_MEMBERS_CHANGED" then
+            UpdatePartyNames()
+        elseif event == "UNIT_PET" then
+            UpdatePetName()
+        end
+    end)
+
+    -- Also hook PLAYER_TARGET_CHANGED for ToT specifically: vanilla fires a
+    -- separate "UNIT_FLAGS"/"UNIT_NAME_UPDATE" but those aren't reliable in
+    -- 1.12.  Re-running UpdateTotName inside PLAYER_TARGET_CHANGED is enough
+    -- because the ToT changes whenever the target changes.
+
+    -- Initial population on module load (handles /reload or late-load scenarios)
+    UpdateTargetName()
+    UpdateTotName()
+    UpdatePetName()
+    UpdatePartyNames()
+
+end)
