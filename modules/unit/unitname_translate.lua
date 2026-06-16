@@ -54,14 +54,13 @@ DFRL:NewMod("UnitNameTranslate", 2, function()
     end
 
     -- Applies translated text to a FontString, prefixing with the translation
-    -- in brackets so the player always sees both forms:
-    --   "龙王" → "龙王 [Dragon King]"
-    -- This keeps original names visible for server-side context (loot rolls,
-    -- /target macros) while surfacing readable English for CN players.
+    -- followed by the original CJK name in brackets:
+    --   "龙王" → "Dragon King [龙王]"
+    -- This keeps English primary for easy reading while retaining server context.
     local function ApplyName(fontString, original, translation)
         if not fontString then return end
         if translation and translation ~= "" then
-            fontString:SetText(original .. " [" .. translation .. "]")
+            fontString:SetText(translation .. " [" .. original .. "]")
         else
             fontString:SetText(original)
         end
@@ -94,7 +93,7 @@ DFRL:NewMod("UnitNameTranslate", 2, function()
         WoWTranslate_API.Translate(name, function(translation, err)
             if translation and translation ~= "" then
                 SaveToCache(name, translation)
-                -- Guard: check the FontString still shows the same name before
+                -- Guard: check the FontString still contains the original name before
                 -- overwriting (target may have changed during the async wait).
                 local current = fontString:GetText()
                 if current and string.find(current, name, 1, true) then
