@@ -256,6 +256,7 @@ DFRL:NewMod("Mini", 1, function()
                 local health, maxHealth = UnitHealth('targettarget'), UnitHealthMax('targettarget')
                 local mana, maxMana = UnitMana('targettarget'), UnitManaMax('targettarget')
                 if maxHealth > 0 and health >= 0 then
+                    Setup.totHealthBar:Show()
                     Setup.totHealthBar.max = maxHealth
                     Setup.totHealthBar.val_ = health
                     Setup.totHealthBar:SetValue(health > 0 and health or 0.001)
