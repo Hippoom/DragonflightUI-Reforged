@@ -379,8 +379,9 @@ DFRL:NewMod("TargetCastbar", 1, function()
             self.timeText:Hide()
         end
 
-        if DFRL:GetTempDB("TargetCastbar", "enemyCastbarIcon") and s.texture then
-            self.icon.texture:SetTexture(s.texture)
+        local icon = s.texture or (s.spell and select(3, GetSpellInfo(s.spell)))
+        if DFRL:GetTempDB("TargetCastbar", "enemyCastbarIcon") and icon then
+            self.icon.texture:SetTexture(icon)
             self.icon:Show()
         else
             self.icon:Hide()
