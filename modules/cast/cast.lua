@@ -651,7 +651,7 @@ DFRL:NewMod("Cast", 1, function()
                             cast, _, _, texture = UnitChannelInfo("player")
                         end
 
-                        local icon = texture or (cast and select(3, GetSpellInfo(cast)))
+                        local icon = texture or (cast and GetSpellInfo and select(3, GetSpellInfo(cast)))
                         if cast and icon and Setup.frame:IsShown() then
                             Setup.targetIcon.texture:SetTexture(icon)
                             Setup.targetIcon:Show()
