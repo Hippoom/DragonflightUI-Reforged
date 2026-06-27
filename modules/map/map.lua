@@ -257,9 +257,8 @@ DFRL:NewMod("Map", 1, function()
         function Setup:EBC()
             if _G.EBC_Minimap then
                 _G.EBC_Minimap:Hide()
-                _G.EBC_Minimap.Show = function() end
-
                 self.ebcMinimap = _G.EBC_Minimap
+                DFRL.ebcMinimap = _G.EBC_Minimap
             end
         end
 

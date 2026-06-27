@@ -19,7 +19,7 @@ DFRL:NewMod("Micro", 1, function()
         microMenuContainer = nil,
         pvpButton = nil,
         lftButton = nil,
-        ebcButton = nil,
+        radioButton = nil,
 
         msText = nil,
         bwText = nil,
@@ -117,45 +117,71 @@ DFRL:NewMod("Micro", 1, function()
         end)
     end
 
-    function Setup:EBCButton()
-        self.ebcButton = CreateFrame("Button", "DFRLEBCMicroButton", self.microMenuContainer)
-        self.ebcButton:SetWidth(self.buttonWidth)
-        self.ebcButton:SetHeight(self.buttonHeight)
-        self.ebcButton:SetHitRectInsets(0, 0, 0, 0)
-        self.ebcButton:Show()
-        self.ebcButton:Enable()
-        self.ebcButton:SetScript("OnClick", function()
-            if not EBCMinimapDropdown then return end
+    function Setup:RadioButton()
+        self.radioButton = CreateFrame("Button", "DFRLRadioMicroButton", self.microMenuContainer)
+        self.radioButton:SetWidth(self.buttonWidth)
+        self.radioButton:SetHeight(self.buttonHeight)
+        self.radioButton:SetHitRectInsets(0, 0, 0, 0)
+        self.radioButton:Show()
+        self.radioButton:Enable()
 
-            EBCMinimapDropdown:ClearAllPoints()
-            EBCMinimapDropdown:SetParent(UIParent)
-            EBCMinimapDropdown:SetPoint("CENTER", self.ebcButton, 0, 65)
+        -- Find EBC minimap button by scanning Minimap children at click time,
+        -- since the global _G reference may be lost when DFRL loads.
+        local function FindRadioMinimapButton()
+            local c = {Minimap:GetChildren()}
+            for i = 1, table.getn(c) do
+                local name = c[i]:GetName() or ""
+                if strfind(name, "EBC_") or strfind(name, "BootyRadio") then
+                    if c[i]:IsObjectType("Button") then
+                        return c[i]
+                    end
+                end
+            end
+            return nil
+        end
 
-            ShowEBCMinimapDropdown()
+        self.radioButton:SetScript("OnClick", function()
+            if EBCMain and (DFRL.ebcMinimap or FindRadioMinimapButton()) then
+                local radioBtn = DFRL.ebcMinimap or FindRadioMinimapButton()
+                radioBtn:Click()
+            elseif not EBCMain and ShowEBCMinimapDropdown and EBCMinimapDropdown then
+                EBCMinimapDropdown:ClearAllPoints()
+                EBCMinimapDropdown:SetParent(UIParent)
+                EBCMinimapDropdown:SetPoint("CENTER", self.radioButton, 0, 65)
 
-            EBCMinimapDropdown:SetFrameStrata("TOOLTIP")
-            EBCMinimapDropdown:SetFrameLevel(200)
-            EBCMinimapDropdown:Raise()
+                ShowEBCMinimapDropdown()
 
-            local children = {EBCMinimapDropdown:GetChildren()}
-            for i = 1, table.getn(children) do
-                local child = children[i]
-                if child then
-                    child:SetFrameStrata("TOOLTIP")
-                    child:SetFrameLevel(200 + i)
-                    if child.Raise then
-                        child:Raise()
+                EBCMinimapDropdown:SetFrameStrata("TOOLTIP")
+                EBCMinimapDropdown:SetFrameLevel(200)
+                EBCMinimapDropdown:Raise()
+
+                local children = {EBCMinimapDropdown:GetChildren()}
+                for i = 1, table.getn(children) do
+                    local child = children[i]
+                    if child then
+                        child:SetFrameStrata("TOOLTIP")
+                        child:SetFrameLevel(200 + i)
+                        if child.Raise then
+                            child:Raise()
+                        end
                     end
                 end
             end
         end)
-        self.ebcButton:SetScript("OnEnter", function()
-            GameTooltip:SetOwner(self.ebcButton, "ANCHOR_RIGHT")
-            GameTooltip:SetText("Everlook Broadcasting Co.", 1, 1, 1, 1, true)
-            GameTooltip:AddLine("Listen to some awesome tunes while you play Turtle WoW.", nil, nil, nil, true)
+
+        self.radioButton:SetScript("OnEnter", function()
+            GameTooltip:SetOwner(self.radioButton, "ANCHOR_RIGHT")
+            if not EBCMain and ShowEBCMinimapDropdown then
+                GameTooltip:SetText("Everlook Broadcasting Co.", 1, 1, 1, 1, true)
+                GameTooltip:AddLine("Listen to some awesome tunes while you play Turtle WoW.", nil, nil, nil, true)
+            elseif EBCMain and (DFRL.ebcMinimap or FindRadioMinimapButton()) then
+                GameTooltip:SetText("Radio Station", 1, 1, 1, 1, true)
+                GameTooltip:AddLine("Listen to some awesome tunes while you play.", nil, nil, nil, true)
+            end
             GameTooltip:Show()
         end)
-        self.ebcButton:SetScript("OnLeave", function()
+
+        self.radioButton:SetScript("OnLeave", function()
             GameTooltip:Hide()
         end)
     end
@@ -221,10 +247,10 @@ DFRL:NewMod("Micro", 1, function()
                 else
                     self.lftButton:Hide()
                 end
-                if ShowEBCMinimapDropdown then
-                    table.insert(newButtons, self.ebcButton)
+                if ShowEBCMinimapDropdown or EBCMain then
+                    table.insert(newButtons, self.radioButton)
                 else
-                    self.ebcButton:Hide()
+                    self.radioButton:Hide()
                 end
             end
         end
@@ -378,7 +404,7 @@ DFRL:NewMod("Micro", 1, function()
         self:BlizzardButtons()
         self:PvPButton()
         self:LFTButton()
-        self:EBCButton()
+        self:RadioButton()
         self:ArrangeButtons()
         self:HideOtherUI()
 
@@ -522,13 +548,13 @@ DFRL:NewMod("Micro", 1, function()
                 Setup.lftButton:GetHighlightTexture():SetTexCoord(36/128, 86/128, 29/128, 98/128)
             end
 
-            if ShowEBCMinimapDropdown and Setup.ebcButton then
-                Setup.ebcButton:SetNormalTexture(colorpath .. "horseshoe-regular.tga")
-                Setup.ebcButton:GetNormalTexture():SetTexCoord(36/128, 86/128, 29/128, 98/128)
-                Setup.ebcButton:SetPushedTexture(colorpath .. "horseshoe-faded.tga")
-                Setup.ebcButton:GetPushedTexture():SetTexCoord(36/128, 86/128, 29/128, 98/128)
-                Setup.ebcButton:SetHighlightTexture(colorpath .. "horseshoe-highlight.tga")
-                Setup.ebcButton:GetHighlightTexture():SetTexCoord(36/128, 86/128, 29/128, 98/128)
+            if (ShowEBCMinimapDropdown or EBCMain) and Setup.radioButton then
+                Setup.radioButton:SetNormalTexture(colorpath .. "horseshoe-regular.tga")
+                Setup.radioButton:GetNormalTexture():SetTexCoord(36/128, 86/128, 29/128, 98/128)
+                Setup.radioButton:SetPushedTexture(colorpath .. "horseshoe-faded.tga")
+                Setup.radioButton:GetPushedTexture():SetTexCoord(36/128, 86/128, 29/128, 98/128)
+                Setup.radioButton:SetHighlightTexture(colorpath .. "horseshoe-highlight.tga")
+                Setup.radioButton:GetHighlightTexture():SetTexCoord(36/128, 86/128, 29/128, 98/128)
             end
 
             -- Fixed Blizzard buttons (always present)
@@ -644,13 +670,13 @@ DFRL:NewMod("Micro", 1, function()
                 Setup.lftButton:GetHighlightTexture():SetTexCoord(122/256, 157/256, 323/512, 372/512)
             end
 
-            if ShowEBCMinimapDropdown and Setup.ebcButton then
-                Setup.ebcButton:SetNormalTexture(Setup.texpath .. "uimicromenu2x.tga")
-                Setup.ebcButton:GetNormalTexture():SetTexCoord(202/256, 237/256, 215/512, 265/512)
-                Setup.ebcButton:SetPushedTexture(Setup.texpath .. "uimicromenu2x.tga")
-                Setup.ebcButton:GetPushedTexture():SetTexCoord(162/256, 198/256, 215/512, 265/512)
-                Setup.ebcButton:SetHighlightTexture(Setup.texpath .. "uimicromenu2x.tga")
-                Setup.ebcButton:GetHighlightTexture():SetTexCoord(162/256, 198/256, 215/512, 265/512)
+            if (ShowEBCMinimapDropdown or EBCMain) and Setup.radioButton then
+                Setup.radioButton:SetNormalTexture(Setup.texpath .. "uimicromenu2x.tga")
+                Setup.radioButton:GetNormalTexture():SetTexCoord(202/256, 237/256, 215/512, 265/512)
+                Setup.radioButton:SetPushedTexture(Setup.texpath .. "uimicromenu2x.tga")
+                Setup.radioButton:GetPushedTexture():SetTexCoord(162/256, 198/256, 215/512, 265/512)
+                Setup.radioButton:SetHighlightTexture(Setup.texpath .. "uimicromenu2x.tga")
+                Setup.radioButton:GetHighlightTexture():SetTexCoord(162/256, 198/256, 215/512, 265/512)
             end
         end
 
