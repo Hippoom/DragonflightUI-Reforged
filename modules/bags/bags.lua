@@ -200,7 +200,7 @@ DFRL:NewMod("Bags", 1, function()
             bagToggleButton:ClearAllPoints()
             bagToggleButton:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", 9, 0)
 
-            local expandTexture = self.texpath .. "expand"
+            local expandTexture = self.texpath .. "expand.tga"
             bagToggleButton:SetNormalTexture(expandTexture)
             bagToggleButton:SetPushedTexture(expandTexture)
             bagToggleButton:SetHighlightTexture(expandTexture)
