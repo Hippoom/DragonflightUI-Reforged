@@ -201,13 +201,25 @@ DFRL:NewMod("Bags", 1, function()
             bagToggleButton:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", 9, 0)
 
             local expandTexture = self.texpath .. "expand.tga"
-            bagToggleButton:SetNormalTexture(expandTexture)
-            bagToggleButton:SetPushedTexture(expandTexture)
-            bagToggleButton:SetHighlightTexture(expandTexture)
 
-            bagToggleButton:GetNormalTexture():SetTexCoord(0, 1, 0, 1)
-            bagToggleButton:GetHighlightTexture():SetTexCoord(0, 1, 0, 1)
-            bagToggleButton:GetPushedTexture():SetTexCoord(0, 1, 0, 1)
+            local normal = bagToggleButton:CreateTexture(nil, "ARTWORK")
+            normal:SetAllPoints(bagToggleButton)
+            normal:SetTexture(expandTexture)
+            normal:SetTexCoord(0, 1, 0, 1)
+            bagToggleButton:SetNormalTexture(normal)
+
+            local pushed = bagToggleButton:CreateTexture(nil, "ARTWORK")
+            pushed:SetAllPoints(bagToggleButton)
+            pushed:SetTexture(expandTexture)
+            pushed:SetTexCoord(0, 1, 0, 1)
+            bagToggleButton:SetPushedTexture(pushed)
+
+            local highlight = bagToggleButton:CreateTexture(nil, "HIGHLIGHT")
+            highlight:SetAllPoints(bagToggleButton)
+            highlight:SetTexture(expandTexture)
+            highlight:SetTexCoord(0, 1, 0, 1)
+            highlight:SetBlendMode("ADD")
+            bagToggleButton:SetHighlightTexture(highlight)
 
             DFRL.bagToggleButton = bagToggleButton
             bagToggleButton:SetScript("OnClick", function()
