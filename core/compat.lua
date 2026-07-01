@@ -129,29 +129,21 @@ function Setup:ShaguMetaData()
     }
 end
 
-function Setup:ApplyShagu()
-    if not DFRL.addon1 then return end
+function Setup:ApplyShaguCore()
+    self:ShaguCore()
+    self:ShaguBagBorders()
+    self:ShaguGUI()
+    DFRL.gui.shaguCoreData = self:ShaguMetaData().core
+    DFRL.gui.shaguCore = true
+end
 
-    if not self.fixed.shaguCore then
-        self:ShaguCore()
-        self:ShaguBagBorders()
-        self:ShaguGUI()
-        self.fixed.shaguCore = true
-    end
-
-    if DFRL.addon2 and not self.fixed.shaguExtras then
-        self:ShaguExtras()
-        self.fixed.shaguExtras = true
-    end
-
-    if not DFRL.gui.shaguCore then
-        DFRL.gui.shaguCoreData = self:ShaguMetaData().core
-        DFRL.gui.shaguCore = true
-    end
-
-    if DFRL.addon2 and not DFRL.gui.shaguExtras then
-        DFRL.gui.shaguExtrasData = self:ShaguMetaData().extras
-        DFRL.gui.shaguExtras = true
+function Setup:ApplyShaguExtras()
+    self:ShaguExtras()
+    DFRL.gui.shaguExtrasData = self:ShaguMetaData().extras
+    DFRL.gui.shaguExtras = true
+    -- extras loaded after UI was drawn — append to the panel
+    if DFRL.gui.shaguBuildExtras then
+        DFRL.gui.shaguBuildExtras()
     end
 end
 
@@ -168,9 +160,9 @@ function Setup:HandleAddon(name)
         return
     end
 
-    local addonType = self.addons[name]
-    if addonType == "shagu" then
-        self:ApplyShagu()
+    if name == "ShaguTweaks-extras" and not self.fixed.shaguExtras then
+        self.fixed.shaguExtras = true
+        self:ApplyShaguExtras()
     end
 
     self.processed[name] = true
@@ -188,7 +180,10 @@ end
 
 function Setup:Init()
     DFRL:OnShaguReady(function()
-        self:ApplyShagu()
+        if not self.fixed.shaguCore then
+            self.fixed.shaguCore = true
+            self:ApplyShaguCore()
+        end
         self.processed["ShaguTweaks"] = true
     end)
 

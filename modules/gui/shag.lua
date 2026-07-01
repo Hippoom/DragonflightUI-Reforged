@@ -20,6 +20,9 @@ DFRL:NewMod("Gui-shag", 3, function()
         CHECKBOX_ROW_SPACING = 45,
         MODULE_SPACING = 25,
         elementsCreated = false,
+        missingExtrasText = nil,
+        missingExtrasPulse = nil,
+        coreEndY = nil,
     }
 
     function Setup:BuildElements()
@@ -134,13 +137,16 @@ DFRL:NewMod("Gui-shag", 3, function()
                     yPos = yPos + self.MODULE_SPACING
                 end
             elseif module == "extras" and not DFRL.gui.shaguExtrasData then
+                self.coreEndY = yPos
                 local txt = panel:CreateFontString(nil, "OVERLAY")
                 txt:SetFont(self.font .. "BigNoodleTitling.ttf", 30, "OUTLINE")
                 txt:SetPoint("TOP", panel, "TOP", 10, -yPos-50)
                 txt:SetText("SHAGU TWEAKS EXTRAS MISSING\nINSTALL FOR MORE OPTIONS")
                 txt:SetTextColor(1, 0.5, 0.5)
+                self.missingExtrasText = txt
                 local f3 = CreateFrame("Frame")
                 f3.t = 0
+                self.missingExtrasPulse = f3
                 f3:SetScript("OnUpdate", function()
                     this.t = this.t + arg1
                     if this.t >= 0.5 then
@@ -150,6 +156,83 @@ DFRL:NewMod("Gui-shag", 3, function()
                 end)
             end
         end
+    end
+
+    function Setup:BuildExtrasSection()
+        if not DFRL.gui.shaguExtrasData then return end
+
+        -- hide the MISSING text
+        if self.missingExtrasText then
+            self.missingExtrasText:Hide()
+        end
+        if self.missingExtrasPulse then
+            self.missingExtrasPulse:SetScript("OnUpdate", nil)
+        end
+
+        -- append extras metadata to existing metadata
+        for elementName, valueTable in pairs(DFRL.gui.shaguExtrasData) do
+            self.metadata[elementName] = {
+                elementType = valueTable[2],
+                elementTypeMeta = valueTable[3],
+                category = valueTable[5],
+                categoryIndex = valueTable[6],
+                description = valueTable[7],
+                extraDescription = valueTable[8],
+                module = "extras"
+            }
+        end
+
+        -- rebuild only the extras UI from where core left off
+        local yPos = self.coreEndY or 65
+        local groups = {}
+        for key, data in pairs(self.metadata) do
+            local module = data.module or "other"
+            if module == "extras" then
+                local cat = data.category or "Other"
+                if not groups[cat] then groups[cat] = {} end
+                table.insert(groups[cat], {key = key, data = data})
+            end
+        end
+
+        local moduleTitle = "ShaguTweaks Extras"
+        local moduleHeader = DFRL.tools.CreateCategoryHeader(panel, moduleTitle, nil, 300, 50, 30)
+        moduleHeader:SetPoint("TOP", panel, "TOP", -200, -yPos)
+        yPos = yPos + self.HEADER_TOP_SPACING + self.HEADER_BOTTOM_SPACING
+
+        local categoryNames = {}
+        for categoryName in pairs(groups) do
+            table.insert(categoryNames, categoryName)
+        end
+        table.sort(categoryNames)
+
+        for _, category in pairs(categoryNames) do
+            local elements = groups[category]
+            table.sort(elements, function(a, b)
+                return (a.data.categoryIndex or 999) < (b.data.categoryIndex or 999)
+            end)
+            local header = DFRL.tools.CreateCategoryHeader(panel, category)
+            header:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, -yPos)
+            self.headers[category] = header
+            yPos = yPos + self.HEADER_TOP_SPACING + self.HEADER_BOTTOM_SPACING
+
+            for i, element in pairs(elements) do
+                local desc = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                desc:SetFont(self.font .. "BigNoodleTitling.ttf", self.DESCRIPTION_FONT_SIZE, "OUTLINE")
+                desc:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, -yPos)
+                desc:SetText(element.data.description or element.key)
+                desc:SetTextColor(.9, .9, .9)
+                self.descriptionLabels[element.key] = desc
+
+                local cb = DFRL.tools.CreateShaguCheckbox(panel, "DFRL_Shagu_" .. element.key, element.key)
+                cb:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -150, -yPos)
+                self.checkboxes[element.key] = cb
+                yPos = yPos + self.CHECKBOX_ROW_SPACING
+            end
+        end
+    end
+
+    DFRL.gui.shaguBuildExtras = function()
+        Setup:BuildExtrasSection()
     end
 
     -- Wait for ShaguTweaks_config so checkboxes can read the saved states.
