@@ -34,6 +34,7 @@ DFRL:NewDefaults("Target", {
     pulseColor = {{1, 1, 1}, "colour", nil, "enablePulse", "Health Bar", 19, "Color for pulse animation", nil, nil},
     enableCutout = {true, "checkbox", nil, nil, "Health Bar", 20, "Enable cutout animation on bars", nil, nil},
     cutoutColor = {{1, 0, 0}, "colour", nil, "enableCutout", "Health Bar", 21, "Color for damage cutout effect", nil, nil},
+    enableHealPrediction = {false, "checkbox", nil, nil, "Health Bar", 22, "Show incoming healing prediction", "Requires ShaguTweaks", nil},
 })
 
 DFRL:NewMod("Target", 1, function()
@@ -129,6 +130,15 @@ DFRL:NewMod("Target", 1, function()
         local pulseColor = DFRL:GetTempDB('Target', 'pulseColor')
         self.healthBar:SetCutoutColor(cutoutColor[1], cutoutColor[2], cutoutColor[3], 1)
         self.healthBar:SetPulseColor(pulseColor[1], pulseColor[2], pulseColor[3], 1)
+
+        -- heal prediction overlay (green bar extending beyond current health)
+        self.healthBar.healPred = self.healthBar:CreateTexture(nil, "BORDER")
+        self.healthBar.healPred:SetTexture("Interface\\TargetingFrame\\UI-StatusBar")
+        self.healthBar.healPred:SetVertexColor(0, 0.6, 0.2, 0.85)
+        self.healthBar.healPred:SetPoint("BOTTOMLEFT", self.healthBar.fill, "BOTTOMRIGHT", 0, 0)
+        self.healthBar.healPred:SetHeight(self.healthBar:GetHeight())
+        self.healthBar.healPred:SetWidth(0)
+        self.healthBar.healPred:Hide()
     end
 
     function Setup:HealthBarText()
@@ -607,8 +617,34 @@ DFRL:NewMod("Target", 1, function()
         end
     end
 
+    callbacks.enableHealPrediction = function()
+        Setup:UpdateHealPrediction()
+    end
+
     callbacks.frameScale = function(value)
         TargetFrame:SetScale(value)
+    end
+
+    function Setup:UpdateHealPrediction()
+        if not self.healthBar or not self.healthBar.healPred then return end
+        local enabled = DFRL:GetTempDB("Target", "enableHealPrediction")
+        if not enabled or not ShaguTweaks or not ShaguTweaks.libpredict then
+            self.healthBar.healPred:Hide()
+            return
+        end
+        local heal = ShaguTweaks.libpredict:UnitGetIncomingHeals("target")
+        if heal and heal > 0 and UnitExists("target") then
+            local health = self:GetTargetHealth() or 0
+            local maxHealth = self.healthBar.max or 1
+            local totalWidth = self.healthBar:GetWidth()
+            local barPct = health / maxHealth
+            local incPct = heal / maxHealth
+            local incWidth = totalWidth * incPct
+            self.healthBar.healPred:SetWidth(math.min(incWidth, totalWidth * (1 - barPct)))
+            self.healthBar.healPred:Show()
+        else
+            self.healthBar.healPred:Hide()
+        end
     end
 
     -- event handler
@@ -660,6 +696,7 @@ DFRL:NewMod("Target", 1, function()
             Setup:CheckTargetTapped()
             Setup:UpdateTexts()
             Setup:UpdateBarColor()
+            Setup:UpdateHealPrediction()
         elseif (event == "UNIT_HEALTH" and arg1 == "target") or
             (event == "UNIT_MANA" and arg1 == "target") or
             (event == "UNIT_ENERGY" and arg1 == "target") or
@@ -670,6 +707,7 @@ DFRL:NewMod("Target", 1, function()
                 Setup.healthBar.max = maxHealth
                 Setup.healthBar:SetValue(health > 0 and health or 0.001)
             end
+            Setup:UpdateHealPrediction()
             if Setup.manaBar and UnitExists('target') then
                 local maxMana = UnitManaMax('target')
                 if maxMana > 0 then
