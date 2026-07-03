@@ -12,8 +12,8 @@ DFRL:NewDefaults("Micro", {
 DFRL:NewMod("Micro", 1, function()
     -- setup
     local Setup = {
-        texpath = "Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\micromenu\\",
-        fontpath = "Interface\\AddOns\\DragonflightUI-Reforged\\media\\fnt\\",
+        texpath = "Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\micromenu\\",
+        fontpath = "Interface\\AddOns\\DragonflightUI-Capybara\\media\\fnt\\",
 
         buttons = {},
         microMenuContainer = nil,

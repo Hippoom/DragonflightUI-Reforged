@@ -100,6 +100,9 @@ self.grid:AddElement(6, 8,
     )
 )
 
+            self.grid:AddElement(4, 9, DFRL.tools.CreateFont(self.addonsFrame, self.TEXT_SIZE, "UnicodeFont", nil, "LEFT"))
+            self.grid:AddElement(6, 9, DFRL.tools.CreateFont(self.addonsFrame, self.TEXT_SIZE, DFRL.addon5 and "Installed" or "Not installed", DFRL.addon5 and {0.5, 1, 0.5} or {0.5, 0.5, 0.5}))
+
             T.GradientLine(self.addonsFrame, "TOP", 35)
             T.GradientLine(self.addonsFrame, "TOP", -5)
             self.addons = true

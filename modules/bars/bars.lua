@@ -66,8 +66,8 @@ DFRL:NewMod("Bars", 1, function()
         f:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
         local Setup = {
-            texpath = "Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\actionbars\\",
-            fontpath = "Interface\\AddOns\\DragonflightUI-Reforged\\media\\fnt\\",
+            texpath = "Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\actionbars\\",
+            fontpath = "Interface\\AddOns\\DragonflightUI-Capybara\\media\\fnt\\",
 
             mainBar = nil,
             actionBarFrame = nil,
@@ -550,27 +550,27 @@ DFRL:NewMod("Bars", 1, function()
         local helpers = {
             getFontPath = function(fontName)
                 if fontName == 'Expressway' then
-                    return 'Interface\\AddOns\\DragonflightUI-Reforged\\media\\fnt\\Expressway.ttf'
+                    return 'Interface\\AddOns\\DragonflightUI-Capybara\\media\\fnt\\Expressway.ttf'
                 elseif fontName == 'Homespun' then
-                    return 'Interface\\AddOns\\DragonflightUI-Reforged\\media\\fnt\\Homespun.ttf'
+                    return 'Interface\\AddOns\\DragonflightUI-Capybara\\media\\fnt\\Homespun.ttf'
                 elseif fontName == 'Hooge' then
-                    return 'Interface\\AddOns\\DragonflightUI-Reforged\\media\\fnt\\Hooge.ttf'
+                    return 'Interface\\AddOns\\DragonflightUI-Capybara\\media\\fnt\\Hooge.ttf'
                 elseif fontName == 'Myriad-Pro' then
-                    return 'Interface\\AddOns\\DragonflightUI-Reforged\\media\\fnt\\Myriad-Pro.ttf'
+                    return 'Interface\\AddOns\\DragonflightUI-Capybara\\media\\fnt\\Myriad-Pro.ttf'
                 elseif fontName == 'Prototype' then
-                    return 'Interface\\AddOns\\DragonflightUI-Reforged\\media\\fnt\\Prototype.ttf'
+                    return 'Interface\\AddOns\\DragonflightUI-Capybara\\media\\fnt\\Prototype.ttf'
                 elseif fontName == 'PT-Sans-Narrow-Bold' then
-                    return 'Interface\\AddOns\\DragonflightUI-Reforged\\media\\fnt\\PT-Sans-Narrow-Bold.ttf'
+                    return 'Interface\\AddOns\\DragonflightUI-Capybara\\media\\fnt\\PT-Sans-Narrow-Bold.ttf'
                 elseif fontName == 'PT-Sans-Narrow-Regular' then
-                    return 'Interface\\AddOns\\DragonflightUI-Reforged\\media\\fnt\\PT-Sans-Narrow-Regular.ttf'
+                    return 'Interface\\AddOns\\DragonflightUI-Capybara\\media\\fnt\\PT-Sans-Narrow-Regular.ttf'
                 elseif fontName == 'RobotoMono' then
-                    return 'Interface\\AddOns\\DragonflightUI-Reforged\\media\\fnt\\RobotoMono.ttf'
+                    return 'Interface\\AddOns\\DragonflightUI-Capybara\\media\\fnt\\RobotoMono.ttf'
                 elseif fontName == 'BigNoodleTitling' then
-                    return 'Interface\\AddOns\\DragonflightUI-Reforged\\media\\fnt\\BigNoodleTitling.ttf'
+                    return 'Interface\\AddOns\\DragonflightUI-Capybara\\media\\fnt\\BigNoodleTitling.ttf'
                 elseif fontName == 'Continuum' then
-                    return 'Interface\\AddOns\\DragonflightUI-Reforged\\media\\fnt\\Continuum.ttf'
+                    return 'Interface\\AddOns\\DragonflightUI-Capybara\\media\\fnt\\Continuum.ttf'
                 elseif fontName == 'DieDieDie' then
-                    return 'Interface\\AddOns\\DragonflightUI-Reforged\\media\\fnt\\DieDieDie.ttf'
+                    return 'Interface\\AddOns\\DragonflightUI-Capybara\\media\\fnt\\DieDieDie.ttf'
                 else
                     return 'Fonts\\FRIZQT__.TTF'
                 end

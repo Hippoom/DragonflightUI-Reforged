@@ -45,8 +45,8 @@ DFRL:NewMod("Ui", 5, function()
             table.insert(closeButtonData, {"ContainerFrame"..i, "ContainerFrame"..i.."CloseButton", -8, -8})
         end
 
-        local path = "Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\close_normal.tga"
-        local pathpushed = "Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\close_pushed.tga"
+        local path = "Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\close_normal.tga"
+        local pathpushed = "Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\close_pushed.tga"
 
         for _, data in ipairs(closeButtonData) do
             local frameName, buttonName, offsetX, offsetY = unpack(data)
@@ -74,9 +74,9 @@ DFRL:NewMod("Ui", 5, function()
                     local texture = region:GetTexture()
                     if texture then
                         if texture == "Interface\\QuestFrame\\UI-QuestLog-Left" then
-                            region:SetTexture("Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\questlog_left.tga")
+                            region:SetTexture("Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\questlog_left.tga")
                         elseif texture == "Interface\\QuestFrame\\UI-QuestLog-Right" then
-                            region:SetTexture("Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\questlog_right.tga")
+                            region:SetTexture("Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\questlog_right.tga")
                         end
                     end
                 end
@@ -87,10 +87,10 @@ DFRL:NewMod("Ui", 5, function()
     -- characterframe
     do
         local tex = {
-            "Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\paperdoll_top_left.tga",
-            "Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\paperdoll_top_right.tga",
-            "Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\paperdoll_bot_left.tga",
-            "Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\paperdoll_bot_right.tga",
+            "Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\paperdoll_top_left.tga",
+            "Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\paperdoll_top_right.tga",
+            "Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\paperdoll_bot_left.tga",
+            "Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\paperdoll_bot_right.tga",
         }
 
         local function ReplaceFrameTextures(frame)
@@ -152,25 +152,25 @@ DFRL:NewMod("Ui", 5, function()
 
             if not frame.customTopLeft then
                 frame.customTopLeft = frame:CreateTexture(nil, "OVERLAY")
-                frame.customTopLeft:SetTexture("Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\paperdoll_top_left.tga")
+                frame.customTopLeft:SetTexture("Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\paperdoll_top_left.tga")
                 frame.customTopLeft:SetWidth(256)
                 frame.customTopLeft:SetHeight(256)
                 frame.customTopLeft:SetPoint("TOPLEFT", frame, "TOPLEFT", -3, 0)
 
                 frame.customTopRight = frame:CreateTexture(nil, "OVERLAY")
-                frame.customTopRight:SetTexture("Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\paperdoll_top_right.tga")
+                frame.customTopRight:SetTexture("Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\paperdoll_top_right.tga")
                 frame.customTopRight:SetWidth(128)
                 frame.customTopRight:SetHeight(256)
                 frame.customTopRight:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -3, 0)
 
                 frame.customBottomLeft = frame:CreateTexture(nil, "OVERLAY")
-                frame.customBottomLeft:SetTexture("Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\paperdoll_bot_left.tga")
+                frame.customBottomLeft:SetTexture("Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\paperdoll_bot_left.tga")
                 frame.customBottomLeft:SetWidth(256)
                 frame.customBottomLeft:SetHeight(256)
                 frame.customBottomLeft:SetPoint("TOPLEFT", frame, "TOPLEFT", -3, -256)
 
                 frame.customBottomRight = frame:CreateTexture(nil, "OVERLAY")
-                frame.customBottomRight:SetTexture("Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\paperdoll_bot_right.tga")
+                frame.customBottomRight:SetTexture("Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\paperdoll_bot_right.tga")
                 frame.customBottomRight:SetWidth(128)
                 frame.customBottomRight:SetHeight(256)
                 frame.customBottomRight:SetPoint("TOPLEFT", frame, "TOPLEFT", 253, -256)
@@ -202,25 +202,25 @@ DFRL:NewMod("Ui", 5, function()
 
             if not frame.customTopLeft then
                 frame.customTopLeft = frame:CreateTexture(nil, "OVERLAY")
-                frame.customTopLeft:SetTexture("Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\paperdoll_top_left.tga")
+                frame.customTopLeft:SetTexture("Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\paperdoll_top_left.tga")
                 frame.customTopLeft:SetWidth(256)
                 frame.customTopLeft:SetHeight(256)
                 frame.customTopLeft:SetPoint("TOPLEFT", frame, "TOPLEFT", -3, 0)
 
                 frame.customTopRight = frame:CreateTexture(nil, "OVERLAY")
-                frame.customTopRight:SetTexture("Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\paperdoll_top_right.tga")
+                frame.customTopRight:SetTexture("Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\paperdoll_top_right.tga")
                 frame.customTopRight:SetWidth(128)
                 frame.customTopRight:SetHeight(256)
                 frame.customTopRight:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -3, 0)
 
                 frame.customBottomLeft = frame:CreateTexture(nil, "OVERLAY")
-                frame.customBottomLeft:SetTexture("Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\paperdoll_bot_left.tga")
+                frame.customBottomLeft:SetTexture("Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\paperdoll_bot_left.tga")
                 frame.customBottomLeft:SetWidth(256)
                 frame.customBottomLeft:SetHeight(256)
                 frame.customBottomLeft:SetPoint("TOPLEFT", frame, "TOPLEFT", -3, -256)
 
                 frame.customBottomRight = frame:CreateTexture(nil, "OVERLAY")
-                frame.customBottomRight:SetTexture("Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\paperdoll_bot_right.tga")
+                frame.customBottomRight:SetTexture("Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\paperdoll_bot_right.tga")
                 frame.customBottomRight:SetWidth(128)
                 frame.customBottomRight:SetHeight(256)
                 frame.customBottomRight:SetPoint("TOPLEFT", frame, "TOPLEFT", 253, -256)
@@ -230,7 +230,7 @@ DFRL:NewMod("Ui", 5, function()
                     if button then
                         local bg = _G["SpellButton" .. i .. "Background"]
                         if bg then
-                            bg:SetTexture("Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\ui\\spell_bg.tga")
+                            bg:SetTexture("Interface\\AddOns\\DragonflightUI-Capybara\\media\\tex\\ui\\spell_bg.tga")
                             bg:SetWidth(44)
                             bg:SetHeight(44)
                         end

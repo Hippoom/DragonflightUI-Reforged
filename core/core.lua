@@ -35,7 +35,7 @@ local boot = false
 
 -- utility
 function DFRL:GetInfoOrCons(type)
-    local name = "DragonflightUI-Reforged"
+    local name = "DragonflightUI-Capybara"
     if type == "name" then
         return name
     elseif type == "version" then
@@ -122,28 +122,28 @@ function DFRL:OnShaguReady(func, configRequired)
     end
 end
 
+-- Add this table right above your DFRL:CheckAddon function
+local trackedAddons = {
+    ["ShaguTweaks"]        = "addon1",
+    ["ShaguTweaks-extras"] = "addon2",
+    ["Bagshui"]            = "addon3",
+    ["Immersion"]          = "addon4",
+    ["UnicodeFont"]        = "addon5",
+}
+
 function DFRL:CheckAddon(name)
-    if name == "ShaguTweaks" then
-        self.addon1 = true
-    elseif name == "ShaguTweaks-extras" then
-        self.addon2 = true
-    elseif name == "Bagshui" then
-        self.addon3 = true
-    elseif name == "Immersion" then
-        self.addon4 = true
+    -- 1. Catch addons loading AFTER yours
+    if name and trackedAddons[name] then
+        self[trackedAddons[name]] = true
     end
 
-    if IsAddOnLoaded("ShaguTweaks") then
-        self.addon1 = true
-    end
-    if IsAddOnLoaded("ShaguTweaks-extras") then
-        self.addon2 = true
-    end
-    if IsAddOnLoaded("Bagshui") then
-        self.addon3 = true
-    end
-    if IsAddOnLoaded("Immersion") then
-        self.addon4 = true
+    -- 2. When YOUR addon loads, scan for anything that loaded BEFORE it
+    if name == "DragonflightUI-Capybara" then
+        for addonName, key in pairs(trackedAddons) do
+            if IsAddOnLoaded(addonName) then
+                self[key] = true
+            end
+        end
     end
 
     self:UpdateShaguReady()
@@ -364,6 +364,7 @@ function DFRL:NewCallbacks(mod, callbacks)
 end
 
 function DFRL:TriggerCallback(cb, value)
+    if not self.callbacks[cb] then return end -- Fixes the nil table crash
     for _, func in ipairs(self.callbacks[cb]) do
         func(value)
     end
@@ -394,11 +395,12 @@ DFRL:SetScript("OnEvent", function()
     if event == "VARIABLES_LOADED" then
         DFRL:UpdateShaguReady()
     end
-    if event == "ADDON_LOADED" and arg1 == "DragonflightUI-Reforged" then
+    if event == "ADDON_LOADED" and arg1 == "DragonflightUI-Capybara" then
         if boot then return end
+		boot = true
         DFRL:InitTempDB()
         DFRL:RunMods()
-        print("Welcome to |cffffd200Dragonflight:|r Reforged.")
+        print("Welcome to |cffffd200Dragonflight:|r Capybara.")
         print("Open menu via |cffddddddESC|r or |cffddddddSLASH DFRL|r.")
     end
     if event == "PLAYER_LOGOUT" then
