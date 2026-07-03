@@ -40,8 +40,6 @@ modules\unit\mini.lua
 modules\unit\pvp.lua
 modules\xprep\xprep.lua
 modules\track\track.lua
-modules\fonts\fonts.lua
-modules\unit\unitname_translate.lua
 # modules\test.lua
 
 # GUI
