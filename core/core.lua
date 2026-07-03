@@ -131,6 +131,8 @@ function DFRL:CheckAddon(name)
         self.addon3 = true
     elseif name == "Immersion" then
         self.addon4 = true
+    elseif name == "UnicodeFont" then
+        self.addon5 = true
     end
 
     if IsAddOnLoaded("ShaguTweaks") then
@@ -144,6 +146,9 @@ function DFRL:CheckAddon(name)
     end
     if IsAddOnLoaded("Immersion") then
         self.addon4 = true
+    end
+    if IsAddOnLoaded("UnicodeFont") then
+        self.addon5 = true
     end
 
     self:UpdateShaguReady()
