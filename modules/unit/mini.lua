@@ -29,10 +29,11 @@ DFRL:NewDefaults("Mini", {
     miniPartyTextMaxShow = {true, "checkbox", nil, "miniTextShow", "Party Text", 13, "Show party max health and mana text", nil, nil},
     colorReaction = {true, "checkbox", nil, nil, "Health Bars", 14, "Color target of target health bars based on reaction", nil, nil},
     colorClass = {false, "checkbox", nil, nil, "Health Bars", 15, "Color target of target and party health bars based on class", nil, nil},
-    enablePulse = {true, "checkbox", nil, nil, "Health Bars", 16, "Enable pulse animation on low health for all mini frames", nil, nil},
-    pulseColor = {{1, 1, 1}, "colour", nil, "enablePulse", "Health Bars", 17, "Color for pulse animation on all mini frames", nil, nil},
-    enableCutout = {true, "checkbox", nil, nil, "Health Bars", 18, "Enable cutout animation on damage for all mini frames", nil, nil},
-    cutoutColor = {{1, 0, 0}, "colour", nil, "enableCutout", "Health Bars", 19, "Color for cutout animation on all mini frames", nil, nil},
+    enableHealPrediction = {false, "checkbox", nil, nil, "Health Bars", 16, "Show incoming healing prediction on party frames", "Requires ShaguTweaks", nil},
+    enablePulse = {true, "checkbox", nil, nil, "Health Bars", 17, "Enable pulse animation on low health for all mini frames", nil, nil},
+    pulseColor = {{1, 1, 1}, "colour", nil, "enablePulse", "Health Bars", 18, "Color for pulse animation on all mini frames", nil, nil},
+    enableCutout = {true, "checkbox", nil, nil, "Health Bars", 19, "Enable cutout animation on damage for all mini frames", nil, nil},
+    cutoutColor = {{1, 0, 0}, "colour", nil, "enableCutout", "Health Bars", 20, "Color for cutout animation on all mini frames", nil, nil},
 })
 
 DFRL:NewMod("Mini", 1, function()
@@ -377,6 +378,16 @@ DFRL:NewMod("Mini", 1, function()
                 self.partyHealthBars[i]:SetTextures(self.path .. 'healthDF2.tga')
                 self.partyHealthBars[i]:SetFillColor(0, 1, 0)
                 self.partyHealthBars[i].max = 100
+
+                -- heal prediction overlay per party member
+                local pred = self.partyHealthBars[i]:CreateTexture(nil, "BORDER")
+                pred:SetTexture("Interface\\TargetingFrame\\UI-StatusBar")
+                pred:SetVertexColor(0, 0.6, 0.2, 0.85)
+                pred:SetPoint("BOTTOMLEFT", self.partyHealthBars[i].fill, "BOTTOMRIGHT", 0, 0)
+                pred:SetHeight(self.partyHealthBars[i]:GetHeight())
+                pred:SetWidth(0)
+                pred:Hide()
+                self.partyHealthBars[i].healPred = pred
 
                 self.partyManaBars[i] = CreateStatusBar(frame, 69, 7)
                 self.partyManaBars[i]:SetPoint('CENTER', frame, 'CENTER', 15, 0.5)
@@ -751,6 +762,7 @@ DFRL:NewMod("Mini", 1, function()
                 else
                     local healthPercent = maxHealth > 0 and math.floor((health / maxHealth) * 100) or 0
                     Setup.partyHealthPercentTexts[i]:SetText(healthPercent .. "%")
+                    Setup:UpdatePartyHealPrediction(i)
                 end
             end
         end
@@ -773,6 +785,7 @@ DFRL:NewMod("Mini", 1, function()
                 else
                     local healthPercent = maxHealth > 0 and math.floor((health / maxHealth) * 100) or 0
                     Setup.partyHealthPercentTexts[i]:SetText(healthPercent .. "%")
+                    Setup:UpdatePartyHealPrediction(i)
                 end
             end
         end
@@ -894,6 +907,36 @@ DFRL:NewMod("Mini", 1, function()
         end
     end
 
+    function Setup:UpdatePartyHealPrediction(index)
+        local bar = self.partyHealthBars[index]
+        if not bar or not bar.healPred then return end
+        local enabled = DFRL:GetTempDB("Mini", "enableHealPrediction")
+        if not enabled or not ShaguTweaks or not ShaguTweaks.libpredict then
+            bar.healPred:Hide()
+            return
+        end
+        local unit = "party" .. index
+        local heal = ShaguTweaks.libpredict:UnitGetIncomingHeals(unit)
+        if heal and heal > 0 and UnitExists(unit) then
+            local health = UnitHealth(unit) or 0
+            local maxHealth = bar.max or 1
+            local totalWidth = bar:GetWidth()
+            local barPct = health / maxHealth
+            local incPct = heal / maxHealth
+            local incWidth = totalWidth * incPct
+            bar.healPred:SetWidth(math.min(incWidth, totalWidth * (1 - barPct)))
+            bar.healPred:Show()
+        else
+            bar.healPred:Hide()
+        end
+    end
+
+    callbacks.enableHealPrediction = function()
+        for i = 1, 4 do
+            Setup:UpdatePartyHealPrediction(i)
+        end
+    end
+
     -- event handler
     local f = CreateFrame("Frame")
     f:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -997,6 +1040,7 @@ DFRL:NewMod("Mini", 1, function()
                             else
                                 local healthPercent = maxHealth > 0 and math.floor((health / maxHealth) * 100) or 0
                                 Setup.partyHealthPercentTexts[i]:SetText(healthPercent .. "%")
+                                Setup:UpdatePartyHealPrediction(i)
                             end
                         else
                             Setup.partyHealthBars[i]:Hide()
