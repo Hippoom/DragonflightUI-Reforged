@@ -117,6 +117,17 @@ function HookAddonOrVariable(addon, func)
     end)
 end
 
+DFRL.tools.SafeGetHealComm = function()
+    -- Returns HealComm-1.0 instance or nil, without triggering
+    -- AceLibrary's geterrorhandler() when the library isn't loaded yet.
+    if not AceLibrary then return nil end
+    local oldHandler = geterrorhandler()
+    seterrorhandler(function() end)
+    local ok, hc = pcall(AceLibrary, "HealComm-1.0")
+    seterrorhandler(oldHandler)
+    return ok and hc or nil
+end
+
 function HookUnitData(unit, func)
     local lurker = CreateFrame("Frame", nil)
     lurker.func = func

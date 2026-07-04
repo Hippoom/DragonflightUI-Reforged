@@ -34,7 +34,7 @@ DFRL:NewDefaults("Target", {
     pulseColor = {{1, 1, 1}, "colour", nil, "enablePulse", "Health Bar", 19, "Color for pulse animation", nil, nil},
     enableCutout = {true, "checkbox", nil, nil, "Health Bar", 20, "Enable cutout animation on bars", nil, nil},
     cutoutColor = {{1, 0, 0}, "colour", nil, "enableCutout", "Health Bar", 21, "Color for damage cutout effect", nil, nil},
-    enableHealPrediction = {false, "checkbox", nil, nil, "Health Bar", 22, "Show incoming healing prediction", "Requires ShaguTweaks", nil},
+    enableHealPrediction = {false, "checkbox", nil, nil, "Health Bar", 22, "Show incoming healing prediction", "Requires HealComm-1.0", nil},
 })
 
 DFRL:NewMod("Target", 1, function()
@@ -131,13 +131,12 @@ DFRL:NewMod("Target", 1, function()
         self.healthBar:SetCutoutColor(cutoutColor[1], cutoutColor[2], cutoutColor[3], 1)
         self.healthBar:SetPulseColor(pulseColor[1], pulseColor[2], pulseColor[3], 1)
 
-        -- heal prediction overlay (green bar extending beyond current health)
-        self.healthBar.healPred = self.healthBar:CreateTexture(nil, "BORDER")
-        self.healthBar.healPred:SetTexture("Interface\\TargetingFrame\\UI-StatusBar")
-        self.healthBar.healPred:SetVertexColor(0, 0.6, 0.2, 0.85)
-        self.healthBar.healPred:SetPoint("BOTTOMLEFT", self.healthBar.fill, "BOTTOMRIGHT", 0, 0)
-        self.healthBar.healPred:SetHeight(self.healthBar:GetHeight())
-        self.healthBar.healPred:SetWidth(0)
+        -- heal prediction StatusBar (behind fill, clips to bar bounds)
+        self.healthBar.healPred = CreateFrame("StatusBar", nil, self.healthBar)
+        self.healthBar.healPred:SetAllPoints()
+        self.healthBar.healPred:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+        self.healthBar.healPred:SetStatusBarColor(0, 0.6, 0.2, 0.85)
+        self.healthBar.healPred:SetFrameLevel(self.healthBar:GetFrameLevel() - 1)
         self.healthBar.healPred:Hide()
     end
 
@@ -628,19 +627,22 @@ DFRL:NewMod("Target", 1, function()
     function Setup:UpdateHealPrediction()
         if not self.healthBar or not self.healthBar.healPred then return end
         local enabled = DFRL:GetTempDB("Target", "enableHealPrediction")
-        if not enabled or not ShaguTweaks or not ShaguTweaks.libpredict then
+        if not enabled then
             self.healthBar.healPred:Hide()
             return
         end
-        local heal = ShaguTweaks.libpredict:UnitGetIncomingHeals("target")
+        local hc = T.SafeGetHealComm()
+        if not hc then
+            self.healthBar.healPred:Hide()
+            return
+        end
+        local heal = hc:getHeal(UnitName("target"))
         if heal and heal > 0 and UnitExists("target") then
             local health = self:GetTargetHealth() or 0
             local maxHealth = self.healthBar.max or 1
-            local totalWidth = self.healthBar:GetWidth()
-            local barPct = health / maxHealth
-            local incPct = heal / maxHealth
-            local incWidth = totalWidth * incPct
-            self.healthBar.healPred:SetWidth(math.min(incWidth, totalWidth * (1 - barPct)))
+            local totalHealth = math.min(health + heal, maxHealth)
+            self.healthBar.healPred:SetMinMaxValues(0, maxHealth)
+            self.healthBar.healPred:SetValue(totalHealth)
             self.healthBar.healPred:Show()
         else
             self.healthBar.healPred:Hide()
@@ -728,6 +730,31 @@ DFRL:NewMod("Target", 1, function()
             f:UnregisterEvent("PLAYER_ENTERING_WORLD")
         end
     end)
+
+    -- periodic heal prediction refresh (0.25s tick)
+    do
+        local predTimer = CreateFrame("Frame")
+        callbacks.enableHealPrediction = function()
+            Setup:UpdateHealPrediction()
+            if DFRL:GetTempDB("Target", "enableHealPrediction") then
+                predTimer:Show()
+            else
+                predTimer:Hide()
+            end
+        end
+        predTimer.elapsed = 0
+        predTimer:SetScript("OnUpdate", function()
+            this.elapsed = this.elapsed + arg1
+            if this.elapsed >= 0.25 then
+                this.elapsed = 0
+                Setup:UpdateHealPrediction()
+            end
+        end)
+        -- start timer immediately if setting is already on
+        if DFRL:GetTempDB("Target", "enableHealPrediction") then
+            predTimer:Show()
+        end
+    end
 
     -- turtle challenge function
     local originalFunc = _G.TargetFrame_UpdateChallenges

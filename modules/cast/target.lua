@@ -53,6 +53,7 @@ DFRL:NewMod("TargetCastbar", 1, function()
             nextPoll = 0,
             layoutKey = nil,
             enabled = false,
+            lastPollTime = 0,
         },
     }
 
@@ -280,18 +281,24 @@ DFRL:NewMod("TargetCastbar", 1, function()
 
     function Setup:GetCastInfo()
         local query, unit = self:GetCastQuery()
-        local spell, _, _, texture, startTime, endTime = UnitCastingInfo(query)
+
+        -- Primary: use the unit name (most reliable, no caching issues)
+        local spell, _, _, texture, startTime, endTime = UnitCastingInfo(unit)
         local channeling = false
 
         if not spell then
-            spell, _, _, texture, startTime, endTime = UnitChannelInfo(query)
+            spell, _, _, texture, startTime, endTime = UnitChannelInfo(unit)
             channeling = spell and true or false
         end
 
+        -- Secondary: SuperWoW GUID query catches casts invisible to
+        -- the unit-name path (e.g. out-of-range units, name collisions).
+        -- Use only as fallback since the GUID cache can return stale data
+        -- after a cast is interrupted.
         if not spell and query ~= unit then
-            spell, _, _, texture, startTime, endTime = UnitCastingInfo(unit)
+            spell, _, _, texture, startTime, endTime = UnitCastingInfo(query)
             if not spell then
-                spell, _, _, texture, startTime, endTime = UnitChannelInfo(unit)
+                spell, _, _, texture, startTime, endTime = UnitChannelInfo(query)
                 channeling = spell and true or false
             else
                 channeling = false
@@ -302,6 +309,7 @@ DFRL:NewMod("TargetCastbar", 1, function()
     end
 
     function Setup:Poll()
+        self.state.lastPollTime = GetTime()
         if not self.state.enabled then
             self:Hide()
             return
@@ -336,6 +344,14 @@ DFRL:NewMod("TargetCastbar", 1, function()
         if not s.casting and not s.channeling then return end
 
         local now = GetTime()
+
+        -- safety: if poll hasn't run in 0.2s, force a refresh or hide
+        if s.lastPollTime and now - s.lastPollTime > 0.2 then
+            self:Poll()
+            if not self:IsActive() then return end
+            s = self.state
+        end
+
         local startSeconds = s.startTime / 1000
         local endSeconds = s.endTime / 1000
         local duration = endSeconds - startSeconds
