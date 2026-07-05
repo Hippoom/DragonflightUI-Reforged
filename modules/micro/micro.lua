@@ -224,6 +224,16 @@ DFRL:NewMod("Micro", 1, function()
             talentVisibilityFrame:RegisterEvent("PLAYER_LEVEL_UP")
             talentVisibilityFrame:SetScript("OnEvent", function()
                 UpdateTalentButtonVisibility()
+                -- parent/position may be lost when button was hidden
+                local btn = Setup.buttons[3]
+                if btn then
+                    btn:SetParent(Setup.microMenuContainer)
+                    btn:ClearAllPoints()
+                    btn:SetPoint("TOPLEFT", Setup.microMenuContainer, "TOPLEFT", 2 * (Setup.buttonWidth + Setup.buttonSpacing), 0)
+                    btn:SetWidth(Setup.buttonWidth)
+                    btn:SetHeight(Setup.buttonHeight)
+                    btn:Enable()
+                end
                 talentVisibilityFrame:UnregisterEvent("PLAYER_ENTERING_WORLD")
             end)
 
