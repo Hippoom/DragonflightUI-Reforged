@@ -265,6 +265,7 @@ end
 function DFRL:SetTempDB(mod, key, value)
     self.tempDB[mod][key] = value
     local cb = mod .. "_" .. key .. "_changed"
+    if not self.callbacks[cb] then return end
     self:TriggerCallback(cb, value)
 end
 
@@ -369,7 +370,9 @@ function DFRL:NewCallbacks(mod, callbacks)
 end
 
 function DFRL:TriggerCallback(cb, value)
-    for _, func in ipairs(self.callbacks[cb]) do
+    local callbacks = self.callbacks[cb]
+    if not callbacks then return end
+    for _, func in ipairs(callbacks) do
         func(value)
     end
 end
