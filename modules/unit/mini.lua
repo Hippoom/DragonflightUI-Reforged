@@ -384,7 +384,7 @@ DFRL:NewMod("Mini", 1, function()
                 pred:SetAllPoints()
                 pred:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
                 pred:SetStatusBarColor(0, 0.6, 0.2, 0.85)
-                pred:SetFrameLevel(self.partyHealthBars[i]:GetFrameLevel() - 1)
+                pred:SetFrameLevel(math.max(0, self.partyHealthBars[i]:GetFrameLevel() - 1))
                 pred:Hide()
                 self.partyHealthBars[i].healPred = pred
 

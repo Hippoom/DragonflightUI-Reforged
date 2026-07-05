@@ -142,7 +142,7 @@ end
         self.healthBar.healPred:SetAllPoints()
         self.healthBar.healPred:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
         self.healthBar.healPred:SetStatusBarColor(0, 0.6, 0.2, 0.85)
-        self.healthBar.healPred:SetFrameLevel(self.healthBar:GetFrameLevel() - 1)
+        self.healthBar.healPred:SetFrameLevel(math.max(0, self.healthBar:GetFrameLevel() - 1))
         self.healthBar.healPred:Hide()
     end
 
