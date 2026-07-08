@@ -26,6 +26,7 @@ DFRL:NewMod("Frames", 2, function()
             DFRL.xpBar,
             DFRL.repBar,
             DFRL.castbar,
+            DFRL.targetCastbar,
             MainMenuBarBackpackButton,
             DFRL.microMenuContainer,
             DFRL.netStatsFrame,
@@ -186,17 +187,21 @@ DFRL:NewMod("Frames", 2, function()
                         DFRL.castbar.bar:Hide() -- bug fix
                     end
 
+                    -- Only show ECB drag UI when detached
+                    if DFRL.targetCastbar and not DFRL:GetTempDB("TargetCastbar", "enemyCastbarAutoPosition") then
+                        DFRL.targetCastbar:Show()
+                    end
+
                     FramerateLabel:Show()
 
                     if DFRL.netStatsFrame then
                         DFRL.netStatsFrame:Show()
                     end
 
-                    -- BuffButton8:Show() -- doesnt work yet
-                    -- TargetUnit("player")
-                    -- TargetFrame:Show()
-
-                    overlay:Show()
+                    -- Suppress ECB overlay when attached (not draggable)
+                    if not (frame == DFRL.targetCastbar and DFRL:GetTempDB("TargetCastbar", "enemyCastbarAutoPosition")) then
+                        overlay:Show()
+                    end
                     grid:Show()
                 else
                     if flag == true then

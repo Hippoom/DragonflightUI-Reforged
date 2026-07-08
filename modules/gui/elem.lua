@@ -113,7 +113,8 @@ DFRL:NewMod("Gui-elem", 3, function()
                         categoryIndex = valueTable[6],
                         description = valueTable[7],
                         extraDescription = valueTable[8],
-                        status = valueTable[9]
+                        status = valueTable[9],
+                        label = valueTable[10]
                     }
                 end
             end
@@ -305,6 +306,9 @@ DFRL:NewMod("Gui-elem", 3, function()
                             checkbox:SetChecked(currentValue)
                             if checkbox.label then
                                 checkbox.label:SetFont(self.font .. "BigNoodleTitling.ttf", self.VALUE_FONT_SIZE, "OUTLINE")
+                                if data.label then
+                                    checkbox.label:SetText(data.label)
+                                end
                             end
 
                             self.checkboxes[elementKey] = checkbox

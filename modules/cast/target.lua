@@ -7,9 +7,9 @@ DFRL:NewDefaults("TargetCastbar", {
     enemyCastbarWidth = {140, "slider", {100, 250}, "enemyCastbar", "enemy castbar", 5, "Change enemy castbar width", nil, nil},
     enemyCastbarHeight = {10, "slider", {8, 24}, "enemyCastbar", "enemy castbar", 6, "Change enemy castbar height", nil, nil},
     enemyCastbarFontSize = {10, "slider", {6, 18}, "enemyCastbar", "enemy castbar", 7, "Change enemy castbar font size", nil, nil},
-    enemyCastbarAutoPosition = {true, "checkbox", nil, "enemyCastbar", "enemy castbar", 8, "Auto adjust position for target buffs/debuffs", nil, nil},
-    enemyCastbarX = {-12, "slider", {-100, 100}, "enemyCastbar", "enemy castbar", 9, "Change enemy castbar X offset", nil, nil},
-    enemyCastbarY = {-4, "slider", {-120, 40}, "enemyCastbar", "enemy castbar", 10, "Change enemy castbar Y offset", nil, nil},
+    enemyCastbarAutoPosition = {true, "checkbox", nil, "enemyCastbar", "enemy castbar", 8, "Attach enemy castbar to target frame", nil, nil, "Attach to target frame"},
+    enemyCastbarX = {-12, "slider", {-100, 100}, "enemyCastbarAutoPosition", "enemy castbar", 9, "Change enemy castbar X offset", nil, nil},
+    enemyCastbarY = {-4, "slider", {-120, 40}, "enemyCastbarAutoPosition", "enemy castbar", 10, "Change enemy castbar Y offset", nil, nil},
 })
 
 DFRL:NewMod("TargetCastbar", 1, function()
@@ -192,6 +192,7 @@ DFRL:NewMod("TargetCastbar", 1, function()
         self.timeText = tt
 
         self.frame = f
+        _G.DFRL.targetCastbar = f
         self:UpdatePosition(true)
     end
 
@@ -220,6 +221,7 @@ DFRL:NewMod("TargetCastbar", 1, function()
 
     function Setup:UpdatePosition(force)
         if not self.frame then return end
+        if not DFRL:GetTempDB("TargetCastbar", "enemyCastbarAutoPosition") then return end
 
         local layoutKey = self:GetLayoutKey()
         if not force and self.state.layoutKey == layoutKey then return end
@@ -228,10 +230,8 @@ DFRL:NewMod("TargetCastbar", 1, function()
         local x = DFRL:GetTempDB("TargetCastbar", "enemyCastbarX")
         local y = DFRL:GetTempDB("TargetCastbar", "enemyCastbarY")
 
-        if DFRL:GetTempDB("TargetCastbar", "enemyCastbarAutoPosition") then
-            local extraRows = math.max(0, self:GetAuraRows() - 2)
-            y = y - 20 - extraRows * 20
-        end
+        local extraRows = math.max(0, self:GetAuraRows() - 2)
+        y = y - 20 - extraRows * 20
 
         self.frame:ClearAllPoints()
         self.frame:SetPoint("BOTTOM", TargetFrame, "BOTTOM", x, y)
@@ -429,6 +429,8 @@ DFRL:NewMod("TargetCastbar", 1, function()
 
     local updateFrame = CreateFrame("Frame")
     updateFrame:SetScript("OnUpdate", function()
+        if DFRL.activeScripts and DFRL.activeScripts["FrameControlScript"] then return end
+
         if Setup.state.enabled then
             Setup:PollUpdate()
         elseif Setup.frame:IsShown() then
@@ -485,7 +487,42 @@ DFRL:NewMod("TargetCastbar", 1, function()
     end
 
     callbacks.enemyCastbarAutoPosition = function()
-        Setup:UpdatePosition(true)
+        if DFRL:GetTempDB("TargetCastbar", "enemyCastbarAutoPosition") then
+            -- Attach: remove drag, reparent, re-anchor
+            Setup.frame:SetScript("OnDragStart", nil)
+            Setup.frame:SetScript("OnDragStop", nil)
+            Setup.frame:SetParent(TargetFrame)
+            Setup:UpdatePosition(true)
+        else
+            -- Detach: reparent, enable drag, position at current screen location
+            Setup.frame:SetParent(UIParent)
+            Setup.frame:SetMovable(true)
+            Setup.frame:EnableMouse(true)
+            Setup.frame:SetScript("OnDragStart", function()
+                if IsControlKeyDown() and IsShiftKeyDown() and IsAltKeyDown() then
+                    Setup.frame:StartMoving()
+                end
+            end)
+            Setup.frame:SetScript("OnDragStop", function()
+                Setup.frame:StopMovingOrSizing()
+                local name = Setup.frame:GetName()
+                if name then
+                    local x, y = Setup.frame:GetLeft(), Setup.frame:GetTop()
+                    DFRL_FRAMEPOS[name] = {x = x, y = y}
+                end
+            end)
+
+            -- Restore previously saved drag position, or anchor at current screen position
+            Setup.frame:ClearAllPoints()
+            if DFRL_FRAMEPOS and DFRL_FRAMEPOS["DFRLTargetCastbar"] then
+                local pos = DFRL_FRAMEPOS["DFRLTargetCastbar"]
+                Setup.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", pos.x, pos.y)
+            else
+                local x, y = Setup.frame:GetLeft(), Setup.frame:GetTop()
+                Setup.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
+            end
+        end
+        Setup:ApplySize()
     end
 
     callbacks.enemyCastbarX = function()
