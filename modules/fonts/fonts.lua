@@ -16,8 +16,6 @@ DFRL:NewDefaults("Fonts", {
                         "Use UnicodeFont for chat frames (requires UnicodeFont addon)", nil, nil},
     unicodeTooltip   = {true,  "checkbox", nil, nil, "unicode font", 4,
                         "Use UnicodeFont for tooltips (requires UnicodeFont addon)", nil, nil},
-    unicodeFontScale = {1.0,   "slider", {0.6, 1.4, 0.05}, nil, "unicode font", 5,
-                        "Scale multiplier applied on top of each frame's default font size", nil, nil},
 })
 
 DFRL:NewMod("Fonts", 2, function()
@@ -72,23 +70,13 @@ DFRL:NewMod("Fonts", 2, function()
     -- directly by the same global handles Blizzard exposes.
     -- ---------------------------------------------------------------
     local function ApplyUnicodeUnitFrames(enable)
-        local scale = DFRL:GetTempDB("Fonts", "unicodeFontScale") or 1.0
         local path  = enable and GetUnicodeFontPath()
 
-        -- Helper: set font or revert to the frame's own stored font path.
-        local function Apply(obj, defaultPath, size, outline)
+        local function ApplyUnicode(obj, defaultPath, size, outline)
             if not obj then return end
-            if path then
-                SafeSetFont(obj, path, size * scale, outline)
-            else
-                SafeSetFont(obj, defaultPath, size, outline)
-            end
+            SafeSetFont(obj, path or defaultPath, size, outline or "")
         end
 
-        -- Grab the font DFRL's unit modules are currently using (stored in
-        -- their config tables, which are module-local). We read from the
-        -- actual FontString instead so we don't need to poke into their
-        -- private upvalues.
         local function CurrentFont(obj)
             if obj and obj.GetFont then
                 local f, s = obj:GetFont()
@@ -100,36 +88,36 @@ DFRL:NewMod("Fonts", 2, function()
         -- Player frame
         if PlayerFrame and PlayerFrame.name then
             local _, s = CurrentFont(PlayerFrame.name)
-            Apply(PlayerFrame.name, "Fonts\\FRIZQT__.TTF", s or 9, "")
+            ApplyUnicode(PlayerFrame.name, "Fonts\\FRIZQT__.TTF", s or 9, "")
         end
         if PlayerLevelText then
             local _, s = CurrentFont(PlayerLevelText)
-            Apply(PlayerLevelText, "Fonts\\FRIZQT__.TTF", s or 9, "")
+            ApplyUnicode(PlayerLevelText, "Fonts\\FRIZQT__.TTF", s or 9, "")
         end
 
         -- Target frame
         if TargetFrame and TargetFrame.name then
             local _, s = CurrentFont(TargetFrame.name)
-            Apply(TargetFrame.name, "Fonts\\FRIZQT__.TTF", s or 9, "")
+            ApplyUnicode(TargetFrame.name, "Fonts\\FRIZQT__.TTF", s or 9, "")
         end
         if TargetLevelText then
             local _, s = CurrentFont(TargetLevelText)
-            Apply(TargetLevelText, "Fonts\\FRIZQT__.TTF", s or 9, "")
+            ApplyUnicode(TargetLevelText, "Fonts\\FRIZQT__.TTF", s or 9, "")
         end
         if TargetDeadText then
-            Apply(TargetDeadText, "Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+            ApplyUnicode(TargetDeadText, "Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
         end
 
         -- Target-of-target frame
         if TargetofTargetFrame and TargetofTargetFrame.name then
             local _, s = CurrentFont(TargetofTargetFrame.name)
-            Apply(TargetofTargetFrame.name, "Fonts\\FRIZQT__.TTF", s or 9, "")
+            ApplyUnicode(TargetofTargetFrame.name, "Fonts\\FRIZQT__.TTF", s or 9, "")
         end
 
         -- Pet frame
         if PetFrame and PetFrame.name then
             local _, s = CurrentFont(PetFrame.name)
-            Apply(PetFrame.name, "Fonts\\FRIZQT__.TTF", s or 9, "")
+            ApplyUnicode(PetFrame.name, "Fonts\\FRIZQT__.TTF", s or 9, "")
         end
 
         -- Party frames
@@ -137,7 +125,7 @@ DFRL:NewMod("Fonts", 2, function()
             local f = _G["PartyMemberFrame" .. i]
             if f and f.name then
                 local _, s = CurrentFont(f.name)
-                Apply(f.name, "Fonts\\FRIZQT__.TTF", s or 9, "")
+                ApplyUnicode(f.name, "Fonts\\FRIZQT__.TTF", s or 9, "")
             end
         end
     end
@@ -146,27 +134,28 @@ DFRL:NewMod("Fonts", 2, function()
     -- Chat font
     -- ---------------------------------------------------------------
     local function ApplyUnicodeChat(enable)
-        local scale = DFRL:GetTempDB("Fonts", "unicodeFontScale") or 1.0
-        local path  = enable and GetUnicodeFontPath()
-        local size  = 14 * scale
+        local path     = enable and GetUnicodeFontPath()
+        local fallback = "Fonts\\ARIALN.TTF"
 
         for i = 1, NUM_CHAT_WINDOWS do
             local frame = _G["ChatFrame" .. i]
             if frame and frame.SetFont then
-                if path then
-                    frame:SetFont(path, size)
-                else
-                    frame:SetFont("Fonts\\ARIALN.TTF", 14)
+                local currentSize = 14
+                if frame.GetFont then
+                    local _, size = frame:GetFont()
+                    currentSize = size or 14
                 end
+                frame:SetFont(path or fallback, currentSize)
             end
         end
 
         if ChatFontNormal then
-            if path then
-                SafeSetFont(ChatFontNormal, path, size)
-            else
-                SafeSetFont(ChatFontNormal, "Fonts\\ARIALN.TTF", 14)
+            local currentSize = 14
+            if ChatFontNormal.GetFont then
+                local _, size = ChatFontNormal:GetFont()
+                currentSize = size or 14
             end
+            SafeSetFont(ChatFontNormal, path or fallback, currentSize)
         end
     end
 
@@ -174,29 +163,29 @@ DFRL:NewMod("Fonts", 2, function()
     -- Tooltip font
     -- ---------------------------------------------------------------
     local function ApplyUnicodeTooltip(enable)
-        local scale = DFRL:GetTempDB("Fonts", "unicodeFontScale") or 1.0
-        local path  = enable and GetUnicodeFontPath()
+        local path     = enable and GetUnicodeFontPath()
+        local fallback = "Fonts\\FRIZQT__.TTF"
 
         local tooltipFonts = {
-            {obj = GameTooltipText,        size = 13},
-            {obj = GameTooltipHeaderText,  size = 14},
-            {obj = GameTooltipTextSmall,   size = 11},
+            GameTooltipText,
+            GameTooltipHeaderText,
+            GameTooltipTextSmall,
         }
-
         for i = 1, 30 do
             local l = _G["GameTooltipTextLeft"  .. i]
             local r = _G["GameTooltipTextRight" .. i]
-            if l then table.insert(tooltipFonts, {obj = l, size = 13}) end
-            if r then table.insert(tooltipFonts, {obj = r, size = 13}) end
+            if l then table.insert(tooltipFonts, l) end
+            if r then table.insert(tooltipFonts, r) end
         end
 
-        for _, entry in ipairs(tooltipFonts) do
-            if entry.obj then
-                if path then
-                    SafeSetFont(entry.obj, path, entry.size * scale)
-                else
-                    SafeSetFont(entry.obj, "Fonts\\FRIZQT__.TTF", entry.size)
+        for _, obj in ipairs(tooltipFonts) do
+            if obj then
+                local currentSize = 14
+                if obj.GetFont then
+                    local _, size = obj:GetFont()
+                    currentSize = size or 14
                 end
+                SafeSetFont(obj, path or fallback, currentSize)
             end
         end
     end
@@ -205,6 +194,11 @@ DFRL:NewMod("Fonts", 2, function()
     -- Callbacks
     -- ---------------------------------------------------------------
     local callbacks = {}
+
+    -- Track last applied value so TriggerAllCallbacks (e.g. on profile
+    -- switch) can skip when the setting hasn't actually changed, preserving
+    -- any manual tweaks the user made (e.g. chat font size).
+    local lastUnicodeChat    = nil
 
     callbacks.unicodePlates = function(value)
         if not DFRL.addon5 then return end
@@ -218,19 +212,14 @@ DFRL:NewMod("Fonts", 2, function()
 
     callbacks.unicodeChat = function(value)
         if not DFRL.addon5 then return end
+        if value == lastUnicodeChat then return end
+        lastUnicodeChat = value
         ApplyUnicodeChat(value)
     end
 
     callbacks.unicodeTooltip = function(value)
         if not DFRL.addon5 then return end
         ApplyUnicodeTooltip(value)
-    end
-
-    callbacks.unicodeFontScale = function(value)
-        if not DFRL.addon5 then return end
-        if DFRL:GetTempDB("Fonts", "unicodeUnitFrames") then ApplyUnicodeUnitFrames(true) end
-        if DFRL:GetTempDB("Fonts", "unicodeChat")       then ApplyUnicodeChat(true)       end
-        if DFRL:GetTempDB("Fonts", "unicodeTooltip")    then ApplyUnicodeTooltip(true)    end
     end
 
     -- Re-apply unit frame and tooltip fonts after target changes, because
