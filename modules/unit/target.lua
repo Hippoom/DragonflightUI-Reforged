@@ -659,6 +659,7 @@ DFRL:NewMod("Target", 1, function()
     f:RegisterEvent("UNIT_ENERGY")
     f:RegisterEvent("UNIT_RAGE")
     f:RegisterEvent("UNIT_FOCUS")
+    f:RegisterEvent("UNIT_DISPLAYPOWER")
     f:SetScript("OnEvent", function()
         if event == "PLAYER_TARGET_CHANGED" then
             if Setup.healthBar then Setup.healthBar:SuppressCutout() end
@@ -703,7 +704,8 @@ DFRL:NewMod("Target", 1, function()
             (event == "UNIT_MANA" and arg1 == "target") or
             (event == "UNIT_ENERGY" and arg1 == "target") or
             (event == "UNIT_RAGE" and arg1 == "target") or
-            (event == "UNIT_FOCUS" and arg1 == "target") then
+            (event == "UNIT_FOCUS" and arg1 == "target") or
+            (event == "UNIT_DISPLAYPOWER" and arg1 == "target") then
             if Setup.healthBar and UnitExists('target') then
                 local health, maxHealth = Setup:GetTargetHealth()
                 Setup.healthBar.max = maxHealth
@@ -717,6 +719,17 @@ DFRL:NewMod("Target", 1, function()
                     Setup.manaBar.max = maxMana
                     local mana = UnitMana('target')
                     Setup.manaBar:SetValue(mana > 0 and mana or 0.001)
+                    -- Update power bar color (critically: on UNIT_DISPLAYPOWER the power type may have changed)
+                    local powerType = UnitPowerType('target')
+                    if powerType == 0 then
+                        Setup.manaBar:SetFillColor(0, 0, 1, 1)
+                    elseif powerType == 1 then
+                        Setup.manaBar:SetFillColor(1, 0, 0, 1)
+                    elseif powerType == 2 then
+                        Setup.manaBar:SetFillColor(1, 0.5, 0.25, 1)
+                    elseif powerType == 3 then
+                        Setup.manaBar:SetFillColor(1, 1, 0, 1)
+                    end
                 else
                     Setup.manaBar:Hide()
                 end
