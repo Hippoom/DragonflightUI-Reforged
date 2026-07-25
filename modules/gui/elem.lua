@@ -75,6 +75,7 @@ DFRL:NewMod("Gui-elem", 3, function()
             ["Errors"]      = {10, 2},
             ["Tooltip"]      = {10, 3},
             ["Ui"]      = {10, 4},
+            ["Fonts"]   = {10, 5},
             ["Micro"]   = {11, 1},
             ["Collector"] = {12, 1},
             ["Map"]     = {12, 2},
