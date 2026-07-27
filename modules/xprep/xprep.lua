@@ -369,7 +369,9 @@ DFRL:NewMod("Xprep", 1, function()
         callbacks.showXpOnGain = function(value)
             Setup.xpOnGainEnabled = value
             if value then
-                Setup.xpBarText:Hide()
+                if DFRL:GetTempDB("Xprep", "hoverXP") then
+                    Setup.xpBarText:Hide()
+                end
                 Setup.xpOnGainTimer = 0
             else
                 if DFRL:GetTempDB("Xprep", "showXpText") and not DFRL:GetTempDB("Xprep", "hoverXP") then
@@ -413,7 +415,7 @@ DFRL:NewMod("Xprep", 1, function()
         callbacks.showXpText = function(value)
             if value then
                 Setup:UpdateXPBar()
-                if not DFRL:GetTempDB('Xprep', 'hoverXP') and not DFRL:GetTempDB('Xprep', 'showXpOnGain') then
+                if not DFRL:GetTempDB('Xprep', 'hoverXP') then
                     Setup.xpBarText:Show()
                 else
                     Setup.xpBarText:Hide()
@@ -473,12 +475,14 @@ DFRL:NewMod("Xprep", 1, function()
             Setup.repOnGainEnabled = value
             if value then
                 if Setup.repBarText then
-                    Setup.repBarText:Hide()
+                    if DFRL:GetTempDB("Xprep", "hoverRep") then
+                        Setup.repBarText:Hide()
+                    end
                 end
                 Setup.repOnGainTimer = 0
             else
                 if Setup.repBarText then
-                    if DFRL:GetTempDB("Xprep", "showRepOnGain") then
+                    if DFRL:GetTempDB("Xprep", "showRepText") and not DFRL:GetTempDB("Xprep", "hoverRep") then
                         Setup.repBarText:Show()
                     end
                 end
@@ -596,9 +600,13 @@ DFRL:NewMod("Xprep", 1, function()
                     f:SetScript("OnUpdate", function()
                         Setup.xpOnGainTimer = Setup.xpOnGainTimer - arg1
                         if Setup.xpOnGainTimer <= 0 then
-                            Setup.xpBarText:Hide()
                             this:SetScript("OnUpdate", nil)
                             DFRL.activeScripts["XpGainTimerScript"] = false
+                            if not DFRL:GetTempDB("Xprep", "hoverXP") and DFRL:GetTempDB("Xprep", "showXpText") then
+                                Setup.xpBarText:Show()
+                            else
+                                Setup.xpBarText:Hide()
+                            end
                         else
                             DFRL.activeScripts["XpGainTimerScript"] = true
                         end
