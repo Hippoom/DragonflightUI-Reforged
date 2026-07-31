@@ -1014,10 +1014,12 @@ DFRL:NewMod("Mini", 1, function()
                         end
                         local health = UnitHealth("party" .. i)
                         local maxHealth = UnitHealthMax("party" .. i)
-                        if maxHealth > 0 and health > 0 then
+                        -- TODO: `health >= 0` is always true (health can't be negative).
+                        -- Simplify to `maxHealth > 0` when unifying party/ToT conditions.
+                        if maxHealth > 0 and health >= 0 then
                             Setup.partyHealthBars[i]:Show()
                             Setup.partyHealthBars[i].max = maxHealth
-                            Setup.partyHealthBars[i]:SetValue(health)
+                            Setup.partyHealthBars[i]:SetValue(health > 0 and health or 0.001)
 
                             local mana = UnitMana("party" .. i)
                             local maxMana = UnitManaMax("party" .. i)
