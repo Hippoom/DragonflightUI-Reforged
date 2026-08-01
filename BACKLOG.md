@@ -23,6 +23,28 @@ Pending items, ordered by priority. None of these are in active development.
   frames 2-4 rely on Blizzard. Fix direction: hook `SetPartyMemberFramePositions`
   + position all 4 frames explicitly. Not yet confirmed.
 
+- **questLog dark mode makes quest dialogue text unreadable**
+  User reported (with dark mode screenshot) that in the quest giver dialogue
+  window, the text has a horizontal gradient background (dark on left) that
+  becomes almost invisible on the left side. Cause: `Darken()` in ui.lua
+  applies `SetVertexColor(0.4, 0.4, 0.4)` to ALL non-blacklisted textures in
+  `QuestFrame` + its panels, over-darkening the gradient background while the
+  text (a FontString) is unaffected. Fix direction: blacklist the gradient
+  text-background texture in `IsBlacklisted()`, or limit `Darken()` to the
+  quest log and leave `QuestFrame` (dialogue window) untouched.
+
+- **Macro icons on bars 2 & 3 adopt the main bar's icon**
+  User reported (SuperCleveroid on Turtle) that macro icons in the bars above
+  the main bar (MultiBarBottomLeft/Right) sometimes show the same icon as a
+  main bar button; fixed by opening/closing the spellbook. This is a classic
+  vanilla `ActionButton_Update` icon-refresh bug (stale `GetMacroInfo` icon /
+  icon texture not reset). DFRL does NOT touch button icon textures directly,
+  but its bar repositioning (`RepositionBars`, `ClearAllPoints`) and the
+  `BonusBarWatcher` `SetAlpha(0)` on main-bar buttons may trigger/expose the
+  refresh miss. Fix direction: hook `ActionButton_Update` to force macro icon
+  refresh, or re-run update on button `OnShow`. Needs confirmation whether
+  disabling DFRL bar layout features makes it stop.
+
 ## Medium priority
 
 - **Review merge-pr9 branch**
