@@ -1,8 +1,9 @@
 DFRL:NewDefaults("Ui", {
     enabled = {true},
     questLog = {false, "checkbox", nil, nil, "appearance", 1, "Enable dark mode for the questlog", nil, nil},
-    gameMenu = {false, "checkbox", nil, nil, "appearance", 2, "Enable dark mode for the game menu", "Only for Blizzards version", nil},
-    characterPanel = {false, "checkbox", nil, nil, "appearance", 3, "Enable dark mode for the character panel", nil, nil},
+    questLogExcludeDialogue = {false, "checkbox", nil, "questLog", "appearance", 2, "Exclude quest giver dialogue from dark mode", "Keeps quest dialogue text readable", nil},
+    gameMenu = {false, "checkbox", nil, nil, "appearance", 3, "Enable dark mode for the game menu", "Only for Blizzards version", nil},
+    characterPanel = {false, "checkbox", nil, nil, "appearance", 4, "Enable dark mode for the character panel", nil, nil},
     hideErrorMessage = {false, "checkbox", nil, nil, "ui tweaks", 4, "Hide the top UI error message (e.g. 'Spell is not ready')", nil, nil},
     lowHpWarn = {true, "checkbox", nil, nil, "ui tweaks", 5, "Show red border when health is low", nil, nil},
     lowHpThreshold = {70, "slider", {5, 95}, nil, "ui tweaks", 6, "Health threshold for low HP warning", nil, nil},
@@ -336,7 +337,7 @@ DFRL:NewMod("Ui", 5, function()
             frame.Material:Show()
         end
 
-        local function Darken(frame)
+        local function Darken(frame, cr, cg, cb, ca)
             if frame and frame.GetRegions then
                 local name = frame.GetName and frame:GetName()
 
@@ -349,20 +350,33 @@ DFRL:NewMod("Ui", 5, function()
                 for _, region in pairs({frame:GetRegions()}) do
                 if region and region.GetObjectType and region:GetObjectType() == "Texture" and region.SetVertexColor then
                     if not IsBlacklisted(region) then
-                    region:SetVertexColor(r, g, b, a)
+                    region:SetVertexColor(cr or r, cg or g, cb or b, ca or a)
                     end
                 end
                 end
             end
         end
 
-        Darken(QuestLogFrame)
-        Darken(QuestLogDetailScrollFrame)
-        Darken(QuestFrame)
+        Darken(QuestLogFrame, r, g, b, a)
+        Darken(QuestLogDetailScrollFrame, r, g, b, a)
 
-        for _, name in pairs({"QuestFrameGreetingPanel", "QuestFrameProgressPanel", "QuestFrameRewardPanel", "QuestFrameDetailPanel"}) do
-            Darken(_G[name])
+        -- When the user excludes the dialogue window, reset it to light instead
+        -- of skipping entirely, so a previously-darkened dialogue returns to
+        -- readable state. Quest text has a gradient background that becomes
+        -- unreadable when darkened.
+        local excludeDialogue = value and DFRL:GetTempDB("Ui", "questLogExcludeDialogue")
+        local dr, dg, db, da = r, g, b, a
+        if excludeDialogue then
+            dr, dg, db, da = 1, 1, 1, 1
         end
+        Darken(QuestFrame, dr, dg, db, da)
+        for _, name in pairs({"QuestFrameGreetingPanel", "QuestFrameProgressPanel", "QuestFrameRewardPanel", "QuestFrameDetailPanel"}) do
+            Darken(_G[name], dr, dg, db, da)
+        end
+    end
+
+    callbacks.questLogExcludeDialogue = function()
+        callbacks.questLog(DFRL:GetTempDB("Ui", "questLog"))
     end
 
     callbacks.gameMenu = function(value)
