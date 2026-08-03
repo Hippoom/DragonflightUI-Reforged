@@ -380,6 +380,36 @@ DFRL:NewMod("Bars", 1, function()
             end)
         end
 
+        -- Refresh multi bar button icons after the main bar pages.
+        -- Vanilla's ActionButton_Update does not re-set a button's icon when
+        -- the main bar pages, so a macro on a multi bar can wrongly show the
+        -- corresponding main bar button's ability icon. Calling
+        -- ActionButton_Update directly is fragile (nil locals mid-paging), so
+        -- we just re-set the icon texture via GetActionTexture. GetActionInfo
+        -- is not available on vanilla 1.12, so we refresh every button that
+        -- has an action (page changes are rare, so the cost is small).
+        function Setup:MultiBarIconPageRefresh()
+            local pageRefreshFrame = CreateFrame("Frame")
+            pageRefreshFrame:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
+            pageRefreshFrame:SetScript("OnEvent", function()
+                for _, prefix in ipairs({"MultiBarBottomLeftButton", "MultiBarBottomRightButton", "MultiBarLeftButton", "MultiBarRightButton"}) do
+                    for i = 1, 12 do
+                        local b = _G[prefix .. i]
+                        if b and b.action and HasAction(b.action) then
+                            -- Vanilla icon texture is referenced by name global
+                            local icon = b.icon or _G[b:GetName() .. "Icon"]
+                            if icon then
+                                local tex = GetActionTexture(b.action)
+                                if tex then
+                                    icon:SetTexture(tex)
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+
         function Setup:PagingButtons()
             self.pagingContainer = CreateFrame("Frame", "DFRL_PagingContainer", UIParent)
             self.pagingContainer:SetWidth(ActionBarUpButton:GetWidth())
@@ -526,6 +556,7 @@ DFRL:NewMod("Bars", 1, function()
             self:PetBar()
             self:ShapeshiftBar()
             self:BonusBarWatcher()
+            self:MultiBarIconPageRefresh()
             self:ButtonBorderHighlight()
             self:PagingButtons()
             self:MainBarBackground()
